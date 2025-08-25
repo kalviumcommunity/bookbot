@@ -13,8 +13,19 @@ if not api_key:
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-def zero_shot_chat():
-    print("🤖 Zero-Shot AI Chatbot (type 'exit' to quit)\n")
+# --- Example for one-shot (teaching AI before query) ---
+one_shot_example = """
+You are a helpful assistant.
+
+Example:
+User: Convert 'Hello World' to Python print statement.
+AI: print("Hello World")
+
+Now answer the following query in the same way.
+"""
+
+def ai_chat():
+    print("🤖 AI Chatbot (Zero-Shot + One-Shot Hybrid Mode) (type 'exit' to quit)\n")
 
     while True:
         query = input("You: ")
@@ -23,11 +34,20 @@ def zero_shot_chat():
             break
 
         try:
-            # Generate a response using Gemini
-            response = model.generate_content(query)
+            # Decide when to use one-shot:
+            # e.g., if the user asks for "convert", "example", or "code"
+            if any(word in query.lower() for word in ["convert", "example", "code", "format"]):
+                prompt = one_shot_example + "\nUser: " + query + "\nAI:"
+                print("🟢 Using One-Shot Prompting")
+            else:
+                prompt = query
+                print("🔵 Using Zero-Shot Prompting")
+
+            response = model.generate_content(prompt)
             print("AI:", response.text.strip(), "\n")
+
         except Exception as e:
             print("Error:", e, "\n")
 
 if __name__ == "__main__":
-    zero_shot_chat()
+    ai_chat()
