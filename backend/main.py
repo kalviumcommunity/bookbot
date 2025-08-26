@@ -13,13 +13,42 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # Create model with temperature parameter
-# You can change temperature between 0.0 (deterministic) to 1.0 (creative)
 model = genai.GenerativeModel(
     "gemini-1.5-flash",
-    generation_config={"temperature": 0.7}   # 👈 added temperature here
+    generation_config={"temperature": 0.7},
+    tools=[
+        {
+            "function_declarations": [
+                {
+                    "name": "get_weather",
+                    "description": "Get the current weather for a city",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "city": {
+                                "type": "string",
+                                "description": "The name of the city"
+                            }
+                        },
+                        "required": ["city"]
+                    }
+                }
+            ]
+        }
+    ]
 )
 
-# One-shot example
+# Example functions the AI can call
+def get_weather(city: str):
+    """Mock weather function — replace with real API if you want"""
+    fake_weather_data = {
+        "Berlin": "Cloudy, 18°C",
+        "Paris": "Sunny, 22°C",
+        "New York": "Rainy, 25°C"
+    }
+    return fake_weather_data.get(city, f"Sorry, I don't have weather data for {city}.")
+
+# One-shot and multi-shot examples
 one_shot_example = """
 You are a helpful assistant.
 
@@ -30,7 +59,6 @@ AI: Berlin
 Now answer the following query in the same way.
 """
 
-# Multi-shot examples
 multi_shot_examples = """
 You are a helpful assistant.
 
@@ -48,7 +76,7 @@ Now answer the following query in the same way.
 """
 
 def ai_chat():
-    print("🤖 AI Chatbot (Dynamic Prompting: Zero-Shot | One-Shot | Multi-Shot) (type 'exit' to quit)\n")
+    print("🤖 AI Chatbot (Dynamic Prompting + Function Calling) (type 'exit' to quit)\n")
 
     while True:
         query = input("You: ")
@@ -61,18 +89,29 @@ def ai_chat():
             if "capital" in query.lower():   # One-shot for factual Q&A
                 prompt = one_shot_example + "\nUser: " + query + "\nAI:"
                 print("🟢 Using One-Shot Prompting")
-
             elif any(word in query.lower() for word in ["convert", "example", "code", "format"]):
                 prompt = multi_shot_examples + "\nUser: " + query + "\nAI:"
                 print("🟣 Using Multi-Shot Prompting")
-
             else:
                 prompt = query
                 print("🔵 Using Zero-Shot Prompting")
 
-            # Generate AI response
+            # Generate response
             response = model.generate_content(prompt)
-            print("AI:", response.text.strip(), "\n")
+
+            # Check if AI requested a function call
+            if response.candidates[0].content.parts[0].function_call:
+                fn_call = response.candidates[0].content.parts[0].function_call
+                fn_name = fn_call.name
+                args = fn_call.args
+
+                if fn_name == "get_weather":
+                    result = get_weather(args.get("city", ""))
+                    print(f"🌦️ Weather result: {result}\n")
+                else:
+                    print(f"⚠️ Function {fn_name} not implemented.\n")
+            else:
+                print("AI:", response.text.strip(), "\n")
 
         except Exception as e:
             print("Error:", e, "\n")
