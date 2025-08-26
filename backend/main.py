@@ -11,7 +11,13 @@ if not api_key:
 
 # Configure Gemini client
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-1.5-flash")
+
+# Create model with temperature parameter
+# You can change temperature between 0.0 (deterministic) to 1.0 (creative)
+model = genai.GenerativeModel(
+    "gemini-1.5-flash",
+    generation_config={"temperature": 0.7}   # 👈 added temperature here
+)
 
 # One-shot example
 one_shot_example = """
