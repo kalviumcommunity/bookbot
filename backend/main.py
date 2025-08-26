@@ -12,7 +12,7 @@ if not api_key:
 # Configure Gemini client
 genai.configure(api_key=api_key)
 
-# Create model with temperature parameter
+# Create model with temperature parameter and function-calling tool
 model = genai.GenerativeModel(
     "gemini-1.5-flash",
     generation_config={"temperature": 0.7},
@@ -25,10 +25,7 @@ model = genai.GenerativeModel(
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "city": {
-                                "type": "string",
-                                "description": "The name of the city"
-                            }
+                            "city": {"type": "string", "description": "The name of the city"}
                         },
                         "required": ["city"]
                     }
@@ -38,7 +35,7 @@ model = genai.GenerativeModel(
     ]
 )
 
-# Example functions the AI can call
+# Example function the AI can call
 def get_weather(city: str):
     """Mock weather function — replace with real API if you want"""
     fake_weather_data = {
@@ -48,7 +45,7 @@ def get_weather(city: str):
     }
     return fake_weather_data.get(city, f"Sorry, I don't have weather data for {city}.")
 
-# One-shot and multi-shot examples
+# ---- Prompt templates ----
 one_shot_example = """
 You are a helpful assistant.
 
@@ -75,8 +72,44 @@ AI: print("Hello")
 Now answer the following query in the same way.
 """
 
+# Safe Chain-of-Thought (CoT) prompting:
+# Ask the model to reason privately, but only output a final answer + brief high-level rationale.
+def build_cot_prompt(user_query: str) -> str:
+    return f"""
+You are a careful reasoning assistant.
+Think through the problem step-by-step in your private scratchpad, but DO NOT reveal those internal steps.
+Only return:
+1) Final answer
+2) A brief high-level rationale (2–4 short bullets, no detailed step-by-step math or hidden chain-of-thought).
+
+Question: {user_query}
+
+Return format:
+Final: <final answer>
+Why (brief):
+- <bullet 1>
+- <bullet 2>
+- <bullet 3>
+"""
+
+def extract_function_call(response):
+    """Safely find a function_call (if any) in the response."""
+    try:
+        for cand in response.candidates:
+            for part in cand.content.parts:
+                fc = getattr(part, "function_call", None)
+                if fc:
+                    return fc
+    except Exception:
+        pass
+    return None
+
 def ai_chat():
-    print("🤖 AI Chatbot (Dynamic Prompting + Function Calling) (type 'exit' to quit)\n")
+    print("🤖 AI Chatbot (Dynamic Prompting + Function Calling + Safe CoT)  — type 'exit' to quit\n")
+    print("Tips:")
+    print(" • Type '/cot <your question>' to force Chain-of-Thought mode")
+    print(" • Ask 'why/how/solve/explain' to auto-trigger CoT")
+    print(" • Ask 'convert/code/format' to trigger multi-shot\n")
 
     while True:
         query = input("You: ")
@@ -85,26 +118,41 @@ def ai_chat():
             break
 
         try:
+            use_cot = False
+            raw_query = query
+
+            # Manual CoT toggle with prefix
+            if query.strip().lower().startswith("/cot "):
+                use_cot = True
+                raw_query = query.strip()[5:]  # remove '/cot '
+
+            # Auto CoT for reasoning-heavy queries
+            reasoning_triggers = ["why", "how", "explain", "prove", "derive", "solve", "estimate", "plan"]
+            if any(w in raw_query.lower() for w in reasoning_triggers):
+                use_cot = True
+
             # Decide prompting strategy
-            if "capital" in query.lower():   # One-shot for factual Q&A
-                prompt = one_shot_example + "\nUser: " + query + "\nAI:"
+            if use_cot:
+                prompt = build_cot_prompt(raw_query)
+                print("🧠 Using Chain-of-Thought (safe) Prompting")
+            elif "capital" in raw_query.lower():   # One-shot for factual Q&A
+                prompt = one_shot_example + "\nUser: " + raw_query + "\nAI:"
                 print("🟢 Using One-Shot Prompting")
-            elif any(word in query.lower() for word in ["convert", "example", "code", "format"]):
-                prompt = multi_shot_examples + "\nUser: " + query + "\nAI:"
+            elif any(word in raw_query.lower() for word in ["convert", "example", "code", "format"]):
+                prompt = multi_shot_examples + "\nUser: " + raw_query + "\nAI:"
                 print("🟣 Using Multi-Shot Prompting")
             else:
-                prompt = query
+                prompt = raw_query
                 print("🔵 Using Zero-Shot Prompting")
 
             # Generate response
             response = model.generate_content(prompt)
 
-            # Check if AI requested a function call
-            if response.candidates[0].content.parts[0].function_call:
-                fn_call = response.candidates[0].content.parts[0].function_call
+            # Function call handling (if the model chose to call a tool)
+            fn_call = extract_function_call(response)
+            if fn_call:
                 fn_name = fn_call.name
-                args = fn_call.args
-
+                args = fn_call.args or {}
                 if fn_name == "get_weather":
                     result = get_weather(args.get("city", ""))
                     print(f"🌦️ Weather result: {result}\n")
