@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-# Load API key from backend/.env (same directory as this file)
+# Load API key from backend/.env
 env_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path=env_path)
 api_key = os.getenv("GEMINI_API_KEY")
@@ -13,7 +13,18 @@ if not api_key:
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# --- Multi-shot examples (teaching AI with multiple Q&A before real query) ---
+# One-shot example
+one_shot_example = """
+You are a helpful assistant.
+
+Example:
+User: What is the capital of Germany?
+AI: Berlin
+
+Now answer the following query in the same way.
+"""
+
+# Multi-shot examples
 multi_shot_examples = """
 You are a helpful assistant.
 
@@ -31,7 +42,7 @@ Now answer the following query in the same way.
 """
 
 def ai_chat():
-    print("🤖 AI Chatbot (Zero-Shot + One-Shot + Multi-Shot Mode) (type 'exit' to quit)\n")
+    print("🤖 AI Chatbot (Dynamic Prompting: Zero-Shot | One-Shot | Multi-Shot) (type 'exit' to quit)\n")
 
     while True:
         query = input("You: ")
@@ -40,15 +51,20 @@ def ai_chat():
             break
 
         try:
-            # Logic to decide which prompting style to use
-            if any(word in query.lower() for word in ["convert", "example", "code", "format"]):
+            # Decide prompting strategy
+            if "capital" in query.lower():   # One-shot for factual Q&A
+                prompt = one_shot_example + "\nUser: " + query + "\nAI:"
+                print("🟢 Using One-Shot Prompting")
+
+            elif any(word in query.lower() for word in ["convert", "example", "code", "format"]):
                 prompt = multi_shot_examples + "\nUser: " + query + "\nAI:"
                 print("🟣 Using Multi-Shot Prompting")
+
             else:
                 prompt = query
                 print("🔵 Using Zero-Shot Prompting")
 
-            # Send request
+            # Generate AI response
             response = model.generate_content(prompt)
             print("AI:", response.text.strip(), "\n")
 
