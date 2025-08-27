@@ -12,7 +12,54 @@ if not api_key:
 # Configure Gemini client
 genai.configure(api_key=api_key)
 
-# Create model with temperature parameter and function-calling tool
+# ----------------- Structured Output Schema -----------------
+BOOK_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string", "description": "The title of the book"},
+        "author": {"type": "string", "description": "The author of the book"},
+        "summary": {"type": "string", "description": "Concise summary of the book"},
+        "key_points": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Important key takeaways from the book"
+        },
+        "difficulty": {
+            "type": "string",
+            "enum": ["beginner", "intermediate", "advanced"],
+            "description": "Reading difficulty level"
+        }
+    },
+    "required": ["title", "author", "summary", "key_points"]
+}
+
+structured_model = genai.GenerativeModel(
+    "gemini-1.5-flash",
+    generation_config={
+        "temperature": 0.7,
+        "response_mime_type": "application/json",
+        "response_schema": BOOK_SCHEMA
+    }
+)
+
+def ai_structured_summary(book_name: str, author_name: str):
+    prompt = f"""
+    You are BookBot. Summarize the book clearly.
+
+    Book Title: {book_name}
+    Author: {author_name}
+    
+    Return structured JSON with:
+    - title
+    - author
+    - summary
+    - key_points
+    - difficulty
+    """
+    response = structured_model.generate_content(prompt)
+    return response.text  # Already JSON
+
+# ----------------- Function Calling Model -----------------
 model = genai.GenerativeModel(
     "gemini-1.5-flash",
     generation_config={"temperature": 0.7},
@@ -72,8 +119,7 @@ AI: print("Hello")
 Now answer the following query in the same way.
 """
 
-# Safe Chain-of-Thought (CoT) prompting:
-# Ask the model to reason privately, but only output a final answer + brief high-level rationale.
+# Safe Chain-of-Thought (CoT) prompting
 def build_cot_prompt(user_query: str) -> str:
     return f"""
 You are a careful reasoning assistant.
@@ -104,12 +150,14 @@ def extract_function_call(response):
         pass
     return None
 
+# ----------------- Main Chat Loop -----------------
 def ai_chat():
-    print("🤖 AI Chatbot (Dynamic Prompting + Function Calling + Safe CoT)  — type 'exit' to quit\n")
+    print("🤖 AI Chatbot (Dynamic Prompting + Function Calling + Safe CoT + Structured Output)  — type 'exit' to quit\n")
     print("Tips:")
     print(" • Type '/cot <your question>' to force Chain-of-Thought mode")
     print(" • Ask 'why/how/solve/explain' to auto-trigger CoT")
-    print(" • Ask 'convert/code/format' to trigger multi-shot\n")
+    print(" • Ask 'convert/code/format' to trigger multi-shot")
+    print(" • Type '/book <book name> by <author>' to get a structured JSON summary\n")
 
     while True:
         query = input("You: ")
@@ -118,24 +166,38 @@ def ai_chat():
             break
 
         try:
+            # -------- Structured Output Mode --------
+            if query.strip().lower().startswith("/book "):
+                try:
+                    book_query = query[6:].strip()
+                    if " by " in book_query:
+                        book_name, author_name = book_query.split(" by ", 1)
+                    else:
+                        book_name, author_name = book_query, "Unknown"
+
+                    result = ai_structured_summary(book_name, author_name)
+                    print("\n📖 Structured Book Summary (JSON):\n", result, "\n")
+
+                except Exception as e:
+                    print("Error in structured summary:", e, "\n")
+                continue
+
+            # -------- CoT, One-shot, Multi-shot --------
             use_cot = False
             raw_query = query
 
-            # Manual CoT toggle with prefix
             if query.strip().lower().startswith("/cot "):
                 use_cot = True
-                raw_query = query.strip()[5:]  # remove '/cot '
+                raw_query = query.strip()[5:]
 
-            # Auto CoT for reasoning-heavy queries
             reasoning_triggers = ["why", "how", "explain", "prove", "derive", "solve", "estimate", "plan"]
             if any(w in raw_query.lower() for w in reasoning_triggers):
                 use_cot = True
 
-            # Decide prompting strategy
             if use_cot:
                 prompt = build_cot_prompt(raw_query)
                 print("🧠 Using Chain-of-Thought (safe) Prompting")
-            elif "capital" in raw_query.lower():   # One-shot for factual Q&A
+            elif "capital" in raw_query.lower():
                 prompt = one_shot_example + "\nUser: " + raw_query + "\nAI:"
                 print("🟢 Using One-Shot Prompting")
             elif any(word in raw_query.lower() for word in ["convert", "example", "code", "format"]):
@@ -148,7 +210,7 @@ def ai_chat():
             # Generate response
             response = model.generate_content(prompt)
 
-            # Function call handling (if the model chose to call a tool)
+            # Function call handling
             fn_call = extract_function_call(response)
             if fn_call:
                 fn_name = fn_call.name
@@ -163,6 +225,7 @@ def ai_chat():
 
         except Exception as e:
             print("Error:", e, "\n")
+
 
 if __name__ == "__main__":
     ai_chat()
