@@ -1,0 +1,224 @@
+/* App.css */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #f6f3ff 0%, #fff6fb 100%);
+  min-height: 100vh;
+}
+
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  padding: 2rem 1rem;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(198, 180, 200, 0.25);
+}
+
+.app-header h1 {
+  font-size: 3rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.app-header p {
+  font-size: 1.2rem;
+  color: #666;
+  font-weight: 400;
+}
+
+.app-main {
+  flex: 1;
+  padding: 2rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.app-footer {
+  background: rgba(255, 255, 255, 0.92);
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Common button styles */
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(198, 180, 200, 0.25);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner animation */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f1ff;
+  border-top: 4px solid #b8c7ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.spinner.small {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* === Animation Utilities (pastel) === */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floaty {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.animate-fade { animation: fadeIn 500ms ease both; }
+.animate-slide-up { animation: fadeInUp 600ms cubic-bezier(.2,.7,.2,1) both; }
+.hover-float:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(198,180,200,.28); }
+.hover-pop:hover { transform: translateY(-2px) scale(1.02); }
+
+.btn-shimmer {
+  background: linear-gradient(90deg, #b8c7ff, #d7c0ff, #b6f0d3, #b8c7ff);
+  background-size: 200% 200%;
+}
+.btn-shimmer:hover { animation: shimmer 1.5s linear infinite; }
+
+.stagger-list > * { opacity: 0; transform: translateY(6px); animation: fadeInUp 600ms ease forwards; }
+.stagger-list > *:nth-child(1) { animation-delay: 60ms; }
+.stagger-list > *:nth-child(2) { animation-delay: 120ms; }
+.stagger-list > *:nth-child(3) { animation-delay: 180ms; }
+.stagger-list > *:nth-child(4) { animation-delay: 240ms; }
+.stagger-list > *:nth-child(5) { animation-delay: 300ms; }
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .app-header h1 {
+    font-size: 2rem;
+    /* align-items: 100px; */
+  }
+  
+  .app-header p {
+    font-size: 1rem;
+    /* margin-right: 100px; */
+  }
+  
+  .app-main {
+    padding: 1rem;
+  }
+}
+
+/* Card styles */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Loading states */
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+}
+
+.loading-state h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.loading-state p {
+  color: #666;
+}
+
+/* Error states */
+.error-state {
+  text-align: center;
+  padding: 3rem;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 12px;
+  color: #c53030;
+}
+
+.error-state h3 {
+  margin-bottom: 1rem;
+}
+
+.error-state p {
+  margin-bottom: 1.5rem;
+}
+
+/* Success states */
+.success-state {
+  text-align: center;
+  padding: 3rem;
+  background: #f0fff4;
+  border: 1px solid #9ae6b4;
+  border-radius: 12px;
+  color: #2f855a;
+}
+
+.success-state h3 {
+  margin-bottom: 1rem;
+}
