@@ -1,3 +1,6 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Coiny&display=swap');
+
 /* App.css */
 * {
   margin: 0;
@@ -22,19 +25,27 @@ body {
 }
 
 .app-header {
-  background: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(135deg, #f6f3ff 0%, #fff6fb 100%);
   backdrop-filter: blur(10px);
-  padding: 2rem 1rem;
+
   text-align: center;
-  box-shadow: 0 4px 20px rgba(198, 180, 200, 0.25);
+
 }
 
-.app-header h1 {
-  font-size: 3rem;
-  color: #333;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
+.bookbot-logo {
+  height: 50px;
+  width: auto;
+  max-width: 100px;
+  object-fit: contain;
+  background: linear-gradient(135deg, #f6f3ff 0%, #fff6fb 100%);
+
+  border: none;
+  outline: none;
+  margin: 0.5rem 0;
+  translate: -700px 15px;
 }
+
+
 
 .app-header p {
   font-size: 1.2rem;
@@ -151,14 +162,13 @@ button:disabled {
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .app-header h1 {
-    font-size: 2rem;
-    /* align-items: 100px; */
+  .bookbot-logo {
+    height: 60px;
+    max-width: 250px;
   }
   
   .app-header p {
     font-size: 1rem;
-    /* margin-right: 100px; */
   }
   
   .app-main {

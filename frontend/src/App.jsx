@@ -5,6 +5,7 @@ import SummaryDisplay from './components/SummaryDisplay';
 import QuizGenerator from './components/QuizGenerator';
 import QuizInterface from './components/QuizInterface';
 import apiService from './services/api';
+import bookbotLogo from './assets/bookbot logo.png';
 
 function App() {
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -109,8 +110,8 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <h1>📚 BookBot AI</h1>
-        <p>Upload any document and get AI-powered summaries and quizzes</p>
+        <img src={bookbotLogo} alt="BookBot Logo" className="bookbot-logo" />
+        {/* <p>Upload any document and get AI-powered summaries and quizzes</p> */}
       </header>
 
       <main className="app-main">
