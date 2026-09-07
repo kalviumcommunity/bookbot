@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import './FileUpload.css';
+import apiService from '../services/api';
 
 const FileUpload = ({ onFileUpload }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -13,75 +14,14 @@ const FileUpload = ({ onFileUpload }) => {
     setIsProcessing(true);
     
     try {
-      let content = '';
-      const fileType = file.type;
-      const fileName = file.name;
-
-      if (fileType === 'text') {
-        content = await readTextFile(file);
-      } else if (fileType === 'application/pdf') {
-        content = await readPDFFile(file);
-      } else if (fileType.startsWith('image/')) {
-        content = await readImageFile(file);
-      } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        content = await readDocxFile(file);
-      } else {
-        throw new Error('Unsupported file type. Please upload PDF, TXT, DOCX, or image files.');
-      }
-
-      onFileUpload(file, content);
+      const response = await apiService.uploadFile(file);
+      onFileUpload(file, response.content);
     } catch (error) {
       alert(`Error processing file: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
   }, [onFileUpload]);
-
-  const readTextFile = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = () => reject(new Error('Failed to read text file'));
-      reader.readAsText(file);
-    });
-  };
-
-  const readPDFFile = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        // For now, we'll send the file to backend for PDF processing
-        // In a real implementation, you'd use a PDF parsing library
-        resolve('PDF content will be processed by backend...');
-      };
-      reader.onerror = () => reject(new Error('Failed to read PDF file'));
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
-  const readImageFile = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        // For images, we'll send the base64 data to backend for OCR processing
-        resolve(`Image: ${file.name} (${file.size} bytes)`);
-      };
-      reader.onerror = () => reject(new Error('Failed to read image file'));
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const readDocxFile = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        // For DOCX files, we'll send to backend for processing
-        resolve('DOCX content will be processed by backend...');
-      };
-      reader.onerror = () => reject(new Error('Failed to read DOCX file'));
-      reader.readAsArrayBuffer(file);
-    });
-  };
 
   const handleDragOver = useCallback((e) => {
     e.preventDefault();

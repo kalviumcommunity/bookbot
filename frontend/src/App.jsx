@@ -1,9 +1,12 @@
+
 import React, { useState } from 'react';
 import './App.css';
+
 import FileUpload from './components/FileUpload';
 import SummaryDisplay from './components/SummaryDisplay';
-import QuizGenerator from './components/QuizGenerator';
 import QuizInterface from './components/QuizInterface';
+import DocumentChat from './components/DocumentChat';
+
 import apiService from './services/api';
 import bookbotLogo from './assets/bookbot logo.png';
 
@@ -12,9 +15,24 @@ function App() {
   const [fileContent, setFileContent] = useState('');
   const [summary, setSummary] = useState(null);
   const [quiz, setQuiz] = useState(null);
-  const [currentView, setCurrentView] = useState('upload'); // 'upload', 'summary', 'quiz'
+  const [currentView, setCurrentView] = useState('upload');
 
+  // Called after a file is successfully parsed by FileUpload
   const handleFileUpload = (file, content) => {
+    if (!file) {
+      console.error('No file received.');
+      return;
+    }
+
+    if (!content || !content.trim()) {
+      console.error('No readable content extracted from the file.');
+      alert(
+        'Could not extract readable text from this document. ' +
+        'Please try a text-based PDF or another supported file.'
+      );
+      return;
+    }
+
     setUploadedFile(file);
     setFileContent(content);
     setSummary(null);
@@ -22,81 +40,112 @@ function App() {
     setCurrentView('summary');
   };
 
+  // Called by SummaryDisplay after AI summary generation
   const handleSummaryGenerated = (summaryData) => {
     setSummary(summaryData);
   };
 
+  // Generate a REAL AI quiz from the uploaded document
   const handleQuizGenerated = async (questionCount) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Use mock quiz data (no API calls)
-      const quizData = createMockQuiz(questionCount);
-      setQuiz(quizData);
+      if (!fileContent || !fileContent.trim()) {
+        throw new Error(
+          'No document content is available for quiz generation.'
+        );
+      }
+
+      if (!questionCount || questionCount < 1) {
+        throw new Error('Please select a valid number of questions.');
+      }
+
+      console.log(
+        `Generating ${questionCount} questions from document content...`
+      );
+
+      // Call the actual backend instead of generating mock questions
+      const quizData = await apiService.generateQuiz(
+        fileContent,
+        questionCount
+      );
+
+      // Validate backend response
+      if (
+        !quizData ||
+        !Array.isArray(quizData.questions) ||
+        quizData.questions.length === 0
+      ) {
+        throw new Error(
+          'The AI did not return any valid quiz questions.'
+        );
+      }
+
+      // Normalize question data before passing it to QuizInterface
+      const normalizedQuestions = quizData.questions
+        .map((question, index) => {
+          if (!question) return null;
+
+          const questionText = String(
+            question.question || ''
+          ).trim();
+
+          const options = Array.isArray(question.options)
+            ? question.options.map((option) =>
+                String(option).trim()
+              )
+            : [];
+
+          const answer = String(
+            question.answer || ''
+          ).trim();
+
+          const explanation = String(
+            question.explanation ||
+              'This answer is supported by the document.'
+          ).trim();
+
+          // Every question needs exactly 4 options
+          if (
+            !questionText ||
+            options.length !== 4 ||
+            options.some((option) => !option) ||
+            !answer ||
+            !options.includes(answer)
+          ) {
+            console.warn(
+              `Skipping invalid question at index ${index}:`,
+              question
+            );
+            return null;
+          }
+
+          return {
+            question: questionText,
+            options,
+            answer,
+            explanation,
+          };
+        })
+        .filter(Boolean);
+
+      if (normalizedQuestions.length === 0) {
+        throw new Error(
+          'The AI returned quiz data, but none of the questions were valid.'
+        );
+      }
+
+      setQuiz({
+        questions: normalizedQuestions,
+      });
+
       setCurrentView('quiz');
     } catch (error) {
-      console.error('Error generating quiz:', error);
-      // Still show a mock quiz even if there's an error
-      setQuiz(createMockQuiz(questionCount));
-      setCurrentView('quiz');
-    }
-  };
+      console.error('Quiz generation error:', error);
 
-  const createMockQuiz = (questionCount) => {
-    const questions = [];
-    const questionTemplates = [
-      {
-        question: "What is the primary concept or main idea discussed in this content?",
-        options: ["A fundamental principle that guides understanding", "A complex theory with multiple components", "A practical application of knowledge", "A historical perspective on the topic"],
-        answer: "A fundamental principle that guides understanding"
-      },
-      {
-        question: "Which of the following best represents the key learning objective of this content?",
-        options: ["To understand core concepts and their applications", "To memorize specific facts and figures", "To develop creative thinking skills", "To learn technical procedures"],
-        answer: "To understand core concepts and their applications"
-      },
-      {
-        question: "What type of knowledge does this content primarily focus on?",
-        options: ["Conceptual understanding and critical thinking", "Factual information and data", "Procedural knowledge and skills", "Creative expression and imagination"],
-        answer: "Conceptual understanding and critical thinking"
-      },
-      {
-        question: "How does this content help learners understand the topic?",
-        options: ["By providing clear explanations and examples", "By presenting complex theories without context", "By focusing only on practical applications", "By avoiding detailed explanations"],
-        answer: "By providing clear explanations and examples"
-      },
-      {
-        question: "What is the most important takeaway from this content?",
-        options: ["Understanding the core concepts and their significance", "Memorizing specific details and facts", "Learning technical procedures", "Developing creative skills"],
-        answer: "Understanding the core concepts and their significance"
-      },
-      {
-        question: "Which learning approach does this content support?",
-        options: ["Active learning through understanding and application", "Passive learning through memorization", "Visual learning through images only", "Auditory learning through listening"],
-        answer: "Active learning through understanding and application"
-      },
-      {
-        question: "What makes this content valuable for learning?",
-        options: ["It provides clear explanations that build understanding", "It contains only factual information", "It focuses on entertainment value", "It avoids complex concepts"],
-        answer: "It provides clear explanations that build understanding"
-      },
-      {
-        question: "How should learners approach this content for maximum benefit?",
-        options: ["Read carefully and think about the concepts", "Skim quickly for key facts", "Focus only on examples", "Ignore the main ideas"],
-        answer: "Read carefully and think about the concepts"
-      }
-    ];
-
-    for (let i = 0; i < questionCount; i++) {
-      const template = questionTemplates[i % questionTemplates.length];
-      questions.push({
-        question: `${i + 1}. ${template.question}`,
-        options: template.options,
-        answer: template.answer
-      });
+      alert(
+        error?.message ||
+          'Failed to generate the quiz. Please try again.'
+      );
     }
-    return { questions };
   };
 
   const resetApp = () => {
@@ -110,21 +159,27 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <img src={bookbotLogo} alt="BookBot Logo" className="bookbot-logo" />
-        {/* <p>Upload any document and get AI-powered summaries and quizzes</p> */}
+        <img
+          src={bookbotLogo}
+          alt="BookBot Logo"
+          className="bookbot-logo"
+        />
       </header>
 
       <main className="app-main">
         {currentView === 'upload' && (
-          <FileUpload onFileUpload={handleFileUpload} />
+          <FileUpload
+            onFileUpload={handleFileUpload}
+          />
         )}
 
-        {currentView === 'summary' && (
+        {currentView === 'summary' && uploadedFile && (
           <SummaryDisplay
             file={uploadedFile}
             content={fileContent}
             onSummaryGenerated={handleSummaryGenerated}
             onGenerateQuiz={handleQuizGenerated}
+            onStartChat={() => setCurrentView('chat')}
             onReset={resetApp}
           />
         )}
@@ -134,6 +189,13 @@ function App() {
             quiz={quiz}
             onBackToSummary={() => setCurrentView('summary')}
             onReset={resetApp}
+          />
+        )}
+
+        {currentView === 'chat' && (
+          <DocumentChat
+            content={fileContent}
+            onBack={() => setCurrentView('summary')}
           />
         )}
       </main>
@@ -146,3 +208,4 @@ function App() {
 }
 
 export default App;
+

@@ -1,277 +1,441 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './SummaryDisplay.css';
 import apiService from '../services/api';
 
-// Helper functions for generating detailed summaries
-const generateDetailedSummary = (content, fileName, contentType, wordCount) => {
-  // Build a friendly overview paragraph directly from the pasted text
-  const sentences = String(content).replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+/).filter(Boolean);
-  const first = sentences.slice(0, 2).join(' ');
-
-  const overviewLead = first || 'This text introduces a topic and develops it with supporting ideas.';
-
-  // Light keyword extraction (non-technical) to describe the topic
-  const words = String(content).toLowerCase().match(/[a-zA-Z][a-zA-Z\-']+/g) || [];
-  const stop = new Set(['the','and','or','of','to','a','in','for','on','is','are','that','with','as','by','an','be','this','it','from','at','was','were','can','will','your','you']);
-  const counts = new Map();
-  for (const w of words) {
-    if (w.length < 3 || stop.has(w)) continue;
-    counts.set(w, (counts.get(w) || 0) + 1);
-  }
-  const keywords = Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([w])=>w);
-  const topicHint = keywords.length ? `The core theme centers around ${keywords.slice(0,3).join(', ')}${keywords.length>3 ? ' and related ideas' : ''}.` : '';
-
-  return `${overviewLead} ${topicHint} The following explanation turns the ideas into simple language so the topic is easy to grasp.`;
-};
-
-// Generate narrative paragraphs to make topic understandable (no bullet specs)
-const generateUnderstandingNarrative = (content, wordCount) => {
-  const cleaned = String(content).replace(/\s+/g, ' ').trim();
-  const sentences = cleaned.split(/(?<=[.!?])\s+/).filter(Boolean);
-
-  const paragraphs = [];
-  // Intro paragraph: what the topic is and why it matters
-  const intro = sentences.length
-    ? `In simple terms, the text explains: ${sentences[0].replace(/\s+/g,' ').trim()} It shows what the idea means and why it matters in everyday thinking.`
-    : `In simple terms, the text introduces a main idea, explains what it means, and shows why it matters.`;
-  paragraphs.push(intro);
-
-  // Middle paragraph: how it works / core concepts in narrative
-  const midSentences = sentences.slice(1, 4).join(' ');
-  const middle = midSentences
-    ? `How it works: the author develops the idea step by step — ${midSentences}. Read it as a small story: definition first, then the most important parts, then how they connect.`
-    : `How it works: read it as a small story — definition first, then the most important parts, then how they connect.`;
-  paragraphs.push(middle);
-
-  // Example/explanation paragraph: bring it to life
-  const tail = sentences.slice(4, 8).join(' ');
-  const example = tail
-    ? `To make it practical, connect the idea to familiar situations. For example: ${tail} This makes cause and effect clear and shows how to apply the idea.`
-    : `To make it practical, connect the idea to familiar situations. This makes cause and effect clear and shows how to apply the idea.`;
-  paragraphs.push(example);
-
-  // Optional advanced/next steps if content is longer
-  if (wordCount > 350) {
-    const advanced = `If you want to go deeper, focus on patterns and relationships: what changes the outcome, which assumptions matter most, and how small adjustments can lead to better results. This creates a mental model you can reuse across different problems.`;
-    paragraphs.push(advanced);
-  }
-
-  return paragraphs;
-};
-
-// Create topic-focused highlights (non-technical, learner-focused)
-const generateTopicHighlights = (content) => {
-  const text = String(content).replace(/\s+/g, ' ').trim();
-  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
-
-  const highlights = [];
-  if (sentences[0]) {
-    highlights.push(`Main idea: ${sentences[0]}`);
-  }
-  if (sentences[1]) {
-    highlights.push(`Why it matters: ${sentences[1]}`);
-  }
-
-  // Pull a few characteristic phrases to suggest subtopics
-  const words = text.toLowerCase().match(/[a-zA-Z][a-zA-Z\-']+/g) || [];
-  const stop = new Set(['the','and','or','of','to','a','in','for','on','is','are','that','with','as','by','an','be','this','it','from','at','was','were','can','will','your','you','their','them','they','these','those','but','not','into','about','over','under']);
-  const counts = new Map();
-  for (const w of words) {
-    if (w.length < 4 || stop.has(w)) continue;
-    counts.set(w, (counts.get(w) || 0) + 1);
-  }
-  const keywords = Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([w])=>w);
-  if (keywords.length) {
-    highlights.push(`Focus terms: ${keywords.slice(0,3).join(', ')}${keywords[3] ? `, ${keywords[3]}` : ''}`);
-  }
-
-  if (sentences[2]) {
-    highlights.push(`How it works: ${sentences[2]}`);
-  }
-  if (sentences[3]) {
-    highlights.push(`Practical angle: ${sentences[3]}`);
-  }
-
-  return highlights.slice(0, 5);
-};
-
-const SummaryDisplay = ({ file, content, onSummaryGenerated, onGenerateQuiz, onReset }) => {
+const SummaryDisplay = ({
+  file,
+  content,
+  onSummaryGenerated,
+  onGenerateQuiz,
+  onStartChat,
+  onReset,
+}) => {
   const [summary, setSummary] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isQuizGenerating, setIsQuizGenerating] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (content && !summary) {
       generateSummary();
     }
-  }, [content, summary]);
+  }, [content]);
+
+  // ----------------------------------------------------------
+  // REAL AI SUMMARY
+  // ----------------------------------------------------------
 
   const generateSummary = async () => {
+    if (!content || !content.trim()) {
+      setError(
+        'No readable text was extracted from this document.'
+      );
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generate detailed, contextual summary based on content
-      const wordCount = content.split(/\s+/).length;
-      const charCount = content.length;
-      const isLongContent = wordCount > 500;
-      const isShortContent = wordCount < 100;
-      
-      // Determine content type and difficulty
-      let contentType = 'document';
-      let difficulty = 'intermediate';
-      
-      if (file.type.includes('image')) {
-        contentType = 'image';
-        difficulty = 'beginner';
-      } else if (file.type.includes('pdf')) {
-        contentType = 'PDF document';
-        difficulty = isLongContent ? 'advanced' : 'intermediate';
-      } else if (file.type.includes('text')) {
-        contentType = 'text document';
-        difficulty = isShortContent ? 'beginner' : 'intermediate';
+      console.log(
+        `Generating summary from ${content.length} characters...`
+      );
+
+      const summaryData = await apiService.generateSummary(
+        content,
+        file?.name || 'Document'
+      );
+
+      if (!summaryData || !summaryData.summary) {
+        throw new Error(
+          'The AI did not return a valid summary.'
+        );
       }
 
-      const summaryData = {
-        title: file.name,
-        type: file.type,
-        summary: generateDetailedSummary(content, file.name, contentType, wordCount),
-        understanding: generateUnderstandingNarrative(content, wordCount),
-        highlights: generateTopicHighlights(content),
-        difficulty: difficulty,
+      const wordCount = content
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean).length;
+
+      const normalizedSummary = {
+        title:
+          summaryData.title ||
+          file?.name ||
+          'Document',
+
+        type:
+          summaryData.type ||
+          file?.type ||
+          'document',
+
+        summary: summaryData.summary,
+
+        highlights:
+          summaryData.key_points ||
+          summaryData.highlights ||
+          [],
+
+        difficulty:
+          summaryData.difficulty ||
+          'intermediate',
+
         word_count: wordCount,
-        char_count: charCount,
-        processing_time: '2.3 seconds',
-        // internal analysis removed from UI to avoid specs
+
+        char_count: content.length,
       };
-      
-      setSummary(summaryData);
-      onSummaryGenerated(summaryData);
+
+      setSummary(normalizedSummary);
+      onSummaryGenerated(normalizedSummary);
+
     } catch (err) {
-      setError('Failed to generate summary. Please try again.');
-      console.error('Summary generation error:', err);
+      console.error(
+        'Summary generation error:',
+        err
+      );
+
+      setError(
+        err?.message ||
+        'Failed to generate summary. Please try again.'
+      );
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleGenerateQuiz = (questionCount) => {
-    onGenerateQuiz(questionCount);
+  // ----------------------------------------------------------
+  // REAL AI QUIZ
+  // ----------------------------------------------------------
+
+  const handleGenerateQuiz = async (questionCount) => {
+    if (isQuizGenerating) {
+      return;
+    }
+
+    if (!content || !content.trim()) {
+      setError(
+        'No document content is available for quiz generation.'
+      );
+      return;
+    }
+
+    setIsQuizGenerating(true);
+    setError(null);
+
+    try {
+      console.log(
+        `Generating ${questionCount} quiz questions...`
+      );
+
+      await onGenerateQuiz(questionCount);
+
+    } catch (err) {
+      console.error(
+        'Quiz generation error:',
+        err
+      );
+
+      setError(
+        err?.message ||
+        'Failed to generate quiz. Please try again.'
+      );
+
+      setIsQuizGenerating(false);
+      return;
+    }
+
+    // App.jsx changes the view after successful generation.
+    setIsQuizGenerating(false);
   };
+
+  // ----------------------------------------------------------
+  // LOADING STATE - SUMMARY
+  // ----------------------------------------------------------
 
   if (isGenerating) {
     return (
       <div className="summary-container">
         <div className="generating-state">
           <div className="spinner"></div>
-          <h3>🤖 AI is analyzing your document...</h3>
-          <p>This may take a few moments depending on file size</p>
+
+          <h3>
+            🤖 AI is analyzing your document...
+          </h3>
+
+          <p>
+            Creating a summary from the actual document content.
+          </p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  // ----------------------------------------------------------
+  // ERROR STATE
+  // ----------------------------------------------------------
+
+  if (error && !summary) {
     return (
       <div className="summary-container">
         <div className="error-state">
+
           <h3>❌ Error</h3>
+
           <p>{error}</p>
-          <button onClick={generateSummary} className="retry-btn">
+
+          <button
+            onClick={generateSummary}
+            className="retry-btn"
+          >
             Try Again
           </button>
-          <button onClick={onReset} className="reset-btn">
+
+          <button
+            onClick={onReset}
+            className="reset-btn"
+          >
             Upload New File
           </button>
+
         </div>
       </div>
     );
   }
+
+  // ----------------------------------------------------------
+  // NO SUMMARY
+  // ----------------------------------------------------------
 
   if (!summary) {
     return null;
   }
 
+  // ----------------------------------------------------------
+  // SUMMARY UI
+  // ----------------------------------------------------------
+
   return (
     <div className="summary-container">
+
       <div className="summary-header">
-        <h2>📖 Document Summary</h2>
+
+        <h2>
+          📖 Document Summary
+        </h2>
+
         <div className="file-info">
-          {/* <span className="file-name">{summary.title}</span> */}
-          {/* <span className="file-type">{summary.type}</span> */}
+          {/* File information intentionally hidden */}
         </div>
+
       </div>
 
       <div className="summary-content">
+
         <div className="summary-section">
-          <h3>📝 Summary</h3>
-          <p className="summary-text">{summary.summary}</p>
+
+          <h3>
+            📝 Summary
+          </h3>
+
+          <p className="summary-text">
+            {summary.summary}
+          </p>
+
         </div>
 
-        {/* <div className="understanding-section">
-          <h3>🧠 Understanding the Topic</h3>
-          {(summary.understanding || []).map((para, index) => (
-            <p key={index} className="understanding-paragraph">{para}</p>
-          ))}
-        </div> */}
+        {summary.highlights &&
+          summary.highlights.length > 0 && (
 
-        {(summary.highlights && summary.highlights.length > 0) && (
-          <div className="highlights-section">
-            <h3>✨ Topic Highlights</h3>
-            <ul className="highlights-list stagger-list">
-              {summary.highlights.map((h, idx) => (
-                <li key={idx} className="highlight-item">{h}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+            <div className="highlights-section">
 
-        {/* Technical stats removed to keep the output non-spec and learner-focused */}
+              <h3>
+                ✨ Topic Highlights
+              </h3>
+
+              <ul className="highlights-list stagger-list">
+
+                {summary.highlights.map(
+                  (highlight, index) => (
+
+                    <li
+                      key={index}
+                      className="highlight-item"
+                    >
+                      {highlight}
+                    </li>
+
+                  )
+                )}
+
+              </ul>
+
+            </div>
+
+          )}
+
       </div>
 
       <div className="summary-actions">
-        <h3>🎯 Ready for a Quiz?</h3>
-        <p>Test your understanding with an AI-generated quiz</p>
-        
+
+        {/* ------------------------------------------------ */}
+        {/* CHAT */}
+        {/* ------------------------------------------------ */}
+
+        <h3>
+          💬 Ask Questions
+        </h3>
+
+        <p>
+          Chat directly with your interactive AI tutor
+          about the document's contents.
+        </p>
+
+        <button
+          onClick={onStartChat}
+          className="chat-action-btn"
+          disabled={isQuizGenerating}
+        >
+          💬 Chat with Document
+        </button>
+
+        {/* ------------------------------------------------ */}
+        {/* QUIZ */}
+        {/* ------------------------------------------------ */}
+
+        <h3 style={{ marginTop: '2rem' }}>
+          🎯 Ready for a Quiz?
+        </h3>
+
+        <p>
+          Test your understanding with an AI-generated
+          quiz based on this document.
+        </p>
+
+        {error && (
+          <div className="error-state">
+            <p>{error}</p>
+          </div>
+        )}
+
+        {isQuizGenerating && (
+          <div className="generating-state quiz-generating">
+
+            <div className="spinner"></div>
+
+            <h3>
+              🤖 Generating Quiz...
+            </h3>
+
+            <p>
+              Creating questions from your document.
+              Please wait a moment.
+            </p>
+
+          </div>
+        )}
+
         <div className="quiz-options">
-          <button 
+
+          {/* QUICK QUIZ */}
+
+          <button
             className="quiz-btn"
-            onClick={() => handleGenerateQuiz(5)}
+            onClick={() =>
+              handleGenerateQuiz(5)
+            }
+            disabled={isQuizGenerating}
           >
-            📝 Quick Quiz (5 questions)
+            {isQuizGenerating
+              ? '⏳ Generating...'
+              : '📝 Quick Quiz (5 questions)'}
           </button>
-          <button 
+
+          {/* STANDARD QUIZ */}
+
+          <button
             className="quiz-btn"
-            onClick={() => handleGenerateQuiz(10)}
+            onClick={() =>
+              handleGenerateQuiz(10)
+            }
+            disabled={isQuizGenerating}
           >
-            📚 Standard Quiz (10 questions)
+            {isQuizGenerating
+              ? '⏳ Generating...'
+              : '📚 Standard Quiz (10 questions)'}
           </button>
-          <button 
+
+          {/* COMPREHENSIVE QUIZ */}
+
+          <button
             className="quiz-btn"
-            onClick={() => handleGenerateQuiz(20)}
+            onClick={() =>
+              handleGenerateQuiz(20)
+            }
+            disabled={isQuizGenerating}
           >
-            🧠 Comprehensive Quiz (20 questions)
+            {isQuizGenerating
+              ? '⏳ Generating...'
+              : '🧠 Comprehensive Quiz (20 questions)'}
           </button>
-          <button 
+
+          {/* CUSTOM QUIZ */}
+
+          <button
             className="quiz-btn custom"
+            disabled={isQuizGenerating}
             onClick={() => {
-              const count = prompt('Enter number of questions (1-50):', '15');
-              if (count && !isNaN(count) && count > 0 && count <= 50) {
-                handleGenerateQuiz(parseInt(count));
+
+              const count = window.prompt(
+                'Enter number of questions (1-20):',
+                '10'
+              );
+
+              if (!count) {
+                return;
               }
+
+              const parsedCount =
+                Number.parseInt(
+                  count,
+                  10
+                );
+
+              if (
+                Number.isInteger(parsedCount) &&
+                parsedCount >= 1 &&
+                parsedCount <= 20
+              ) {
+                handleGenerateQuiz(
+                  parsedCount
+                );
+              } else {
+                setError(
+                  'Please enter a number between 1 and 20.'
+                );
+              }
+
             }}
           >
-            ⚙️ Custom Quiz
+            {isQuizGenerating
+              ? '⏳ Generating...'
+              : '⚙️ Custom Quiz'}
           </button>
+
         </div>
 
-        <button onClick={onReset} className="reset-btn">
+        {/* ------------------------------------------------ */}
+        {/* RESET */}
+        {/* ------------------------------------------------ */}
+
+        <button
+          onClick={onReset}
+          className="reset-btn"
+          disabled={isQuizGenerating}
+        >
           📄 Upload Another File
         </button>
+
       </div>
+
     </div>
   );
 };
