@@ -316,9 +316,13 @@ Error handling: backend `detail` field used as user-facing message; `TypeError` 
 
 ### 5.7 Design System & CSS
 
-**Background gradient**: `linear-gradient(135deg, #f6f3ff 0%, #fff6fb 100%)` — soft lavender-to-pink.
+**Theme**: Deep Burgundy + Oak White design token system (configured in `src/index.css`).
 
-**Accent colors**: `#b8c7ff` (blue-lavender), `#d7c0ff` (purple), `#b6f0d3` (mint green).
+- **Brand Colors**: `--color-primary: #571133` (Deep Burgundy), `--color-primary-hover: #762448` (Wine)
+- **Backgrounds**: `--color-background: #FAF8F5` (Luminous Oak White dominant bg), `--color-bg-secondary: #F3EFE8` (Soft Pale Oak)
+- **Cards & Borders**: `--color-card: #FFFFFF` (Crisp Oak White card surface), `--color-border: #E5E0D8` (Pale Oak Wood-Grain border)
+- **Accents**: `--color-accent: #A65B76` (Muted Rose / Berry), `--color-accent-soft: #E2D3D8` (Pale Oak Rose)
+- **Text**: `--color-text: #231C1F` (Deep Charcoal), `--color-muted: #786E66` (Accessible Oak Taupe)
 
 **Animation utilities** in `App.css`:
 - `.animate-fade` — fade in 500ms
@@ -330,9 +334,9 @@ Error handling: backend `detail` field used as user-facing message; `TypeError` 
 
 **Spinner**: `.spinner` and `.spinner.small` — CSS border-top rotation.
 
-**Card base**: `.card` — white bg, `border-radius: 12px`, `box-shadow: 0 8px 32px rgba(0,0,0,0.1)`.
+**Card base**: `.card` — white bg, `border-radius: 12px`, `box-shadow: var(--shadow-md)`.
 
-**Font**: System UI stack + Google Font `Coiny` for logo/header.
+**Font**: Inter font family for typography + Google Font `Coiny` for logo/header accents.
 
 ### 5.8 Frontend Dependencies
 
@@ -588,7 +592,7 @@ App: `http://localhost:5173`
 
 > **`QuizGenerator.jsx` exists but is unused.** It appears to be a leftover from an earlier iteration. The quiz launching UI is inside `SummaryDisplay.jsx`.
 
-> **The bookbot logo is positioned with `translate: -700px 15px`** in `App.css` — a non-standard CSS property (should be `transform: translate(...)` or `translate` shorthand). This works in modern browsers but may need fixing for strict compatibility.
+> **The bookbot logo is positioned with standard flexbox alignment** in `.app-header` (`padding: 0.6rem 2rem; display: flex; align-items: center; justify-content: flex-start;`), ensuring clean rendering across all viewport sizes.
 
 ---
 
@@ -603,7 +607,7 @@ App: `http://localhost:5173`
 - [ ] Multi-document support — upload multiple files, cross-reference them
 - [ ] Collaborative features — share documents and quizzes with teammates
 - [ ] Production hardening — CORS restrictions, HTTPS, rate limiting, auth
-- [ ] Fix logo CSS `translate` property to standard `transform: translate()`
+- [x] Fix logo CSS `translate` property to standard flexbox header alignment
 
 ---
 
