@@ -22,6 +22,20 @@ A modern web application that uses AI to analyze documents and generate interact
 - **AI Integration**: Google Gemini AI
 - **File Processing**: PyPDF2, python-docx
 
+## 👩‍💻 My Contribution / Ownership
+
+I contributed to BookBot as part of the project development, focusing on the implementation of the application's AI-powered learning workflow and supporting the development of the frontend and backend components.
+
+My contributions included:
+
+* Implementing the **LLM Function Calling workflow** for generating interactive quizzes from processed book content.
+* Contributing to the **React-based user interface** for navigating document summaries, topics, and quizzes.
+* Supporting the **Python/FastAPI backend and RAG pipeline** for processing book content and retrieving relevant context for AI-generated responses.
+* Contributing to the integration of the document-processing, summarization, and quiz-generation workflow.
+
+The quantitative performance claims previously associated with this project have not been retained because reproducible measurement evidence was not available. The project README therefore focuses on implemented functionality rather than unsupported performance metrics.
+
+
 ## 🚀 Quick Start
 
 ### Prerequisites
