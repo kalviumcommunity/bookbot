@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './QuizInterface.css';
+import apiService from '../services/api';
 
-const QuizInterface = ({ quiz, onBackToSummary, onReset }) => {
+const QuizInterface = ({ quiz, bookName, difficulty, onBackToSummary, onReset }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes default
   const [quizStarted, setQuizStarted] = useState(false);
+  const [saveError, setSaveError] = useState(null); // non-blocking save error
+  const attemptSaved = useRef(false);               // guard against double-save
 
   useEffect(() => {
     let timer;
@@ -70,6 +73,35 @@ const QuizInterface = ({ quiz, onBackToSummary, onReset }) => {
   const startQuiz = () => {
     setQuizStarted(true);
   };
+
+  // Auto-save the attempt once when results are shown
+  useEffect(() => {
+    if (!showResults || attemptSaved.current) return;
+    attemptSaved.current = true; // mark immediately to prevent double-save
+
+    const score = calculateScore();
+    const resolvedBookName = bookName || 'Unknown Document';
+    const resolvedDifficulty = difficulty || 'medium';
+
+    apiService
+      .saveQuizAttempt(
+        resolvedBookName,
+        score.correct,
+        score.total,
+        resolvedDifficulty
+      )
+      .then(() => {
+        console.log('Quiz attempt saved successfully.');
+      })
+      .catch((err) => {
+        console.error('Failed to save quiz attempt:', err);
+        // Non-blocking: the result stays visible even if saving fails
+        setSaveError(
+          err?.message ||
+          'Could not save this attempt to your learning history. Your score is still shown above.'
+        );
+      });
+  }, [showResults]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!quiz || !quiz.questions) {
     return (
@@ -153,6 +185,13 @@ const QuizInterface = ({ quiz, onBackToSummary, onReset }) => {
             })}
           </div>
 
+          {/* Non-blocking save error — always show score, even on failure */}
+          {saveError && (
+            <div className="save-error-banner">
+              ⚠️ {saveError}
+            </div>
+          )}
+
           <div className="result-actions">
             <button onClick={() => {
               setCurrentQuestion(0);
@@ -160,6 +199,8 @@ const QuizInterface = ({ quiz, onBackToSummary, onReset }) => {
               setShowResults(false);
               setQuizStarted(false);
               setTimeLeft(600);
+              setSaveError(null);
+              attemptSaved.current = false;
             }} className="retake-btn">
               🔄 Retake Quiz
             </button>
@@ -174,6 +215,7 @@ const QuizInterface = ({ quiz, onBackToSummary, onReset }) => {
       </div>
     );
   }
+
 
   const question = quiz.questions[currentQuestion];
   const progress = ((currentQuestion + 1) / quiz.questions.length) * 100;

@@ -1,8 +1,12 @@
 
 // frontend/src/services/api.js
+//
+// Singleton ApiService that handles all communication with the BookBot backend.
+// All authenticated requests automatically attach the stored JWT as a Bearer token.
 
-// Use VITE_API_URL when deployed.
-// Falls back to localhost for local development.
+const TOKEN_KEY = 'bookbot_token';
+
+// Use VITE_API_URL when deployed. Falls back to localhost for local development.
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -11,21 +15,51 @@ class ApiService {
     this.baseURL = API_BASE_URL.replace(/\/$/, '');
   }
 
+  // ─── Token helpers ─────────────────────────────────────────────────────────
+
+  _getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  _authHeaders() {
+    const token = this._getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  // ─── Generic request helper ────────────────────────────────────────────────
+
   /**
-   * Generic helper for API requests.
-   * Handles JSON parsing and useful backend error messages.
+   * Make an HTTP request.
+   * Automatically attaches Authorization header if a token exists.
+   * Reads backend `detail` / `message` / `error` for error messages.
    */
   async request(endpoint, options = {}) {
     try {
+      // Merge auth headers into every request
+      const headers = {
+        ...(options.headers || {}),
+        ...this._authHeaders(),
+      };
+
       const response = await fetch(
         `${this.baseURL}${endpoint}`,
-        options
+        { ...options, headers }
       );
 
       // Try to parse JSON regardless of status code.
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
+        // Handle 401 specifically — token expired or invalid
+        if (response.status === 401) {
+          // Clear stale token so the user gets redirected to /login
+          localStorage.removeItem(TOKEN_KEY);
+          throw new Error(
+            data?.detail ||
+            'Your session has expired. Please log in again.'
+          );
+        }
+
         const errorMessage =
           data?.detail ||
           data?.message ||
@@ -37,7 +71,7 @@ class ApiService {
 
       return data;
     } catch (error) {
-      // Network/server unavailable
+      // Network / server unavailable
       if (error instanceof TypeError) {
         throw new Error(
           `Could not connect to BookBot backend at ${this.baseURL}. ` +
@@ -48,6 +82,42 @@ class ApiService {
       throw error;
     }
   }
+
+  // ─── Auth API ──────────────────────────────────────────────────────────────
+
+  /**
+   * Register a new user.
+   * Returns { access_token, token_type }.
+   */
+  async signup(name, email, password) {
+    return await this.request('/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+  }
+
+  /**
+   * Log in with email + password.
+   * Returns { access_token, token_type }.
+   */
+  async login(email, password) {
+    return await this.request('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  /**
+   * Fetch the currently authenticated user.
+   * Returns { id, name, email }.
+   */
+  async getCurrentUser() {
+    return await this.request('/auth/me');
+  }
+
+  // ─── Document API ──────────────────────────────────────────────────────────
 
   /**
    * Upload a document to the backend.
@@ -84,9 +154,7 @@ class ApiService {
 
     return await this.request('/summarize', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content: content.trim(),
         title: title || 'Document',
@@ -118,9 +186,7 @@ class ApiService {
 
     const data = await this.request('/quiz', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content: content.trim(),
         question_count: count,
@@ -175,9 +241,7 @@ class ApiService {
 
     return await this.request('/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content: content.trim(),
         message: message.trim(),
@@ -185,10 +249,46 @@ class ApiService {
       }),
     });
   }
+
+  // ─── Learning Progress API ──────────────────────────────────────────────────
+
+  /**
+   * Save a completed quiz attempt.
+   * percentage is calculated server-side — not sent from the client.
+   * user_id comes from the JWT on the backend — never from this call.
+   */
+  async saveQuizAttempt(bookName, score, totalQuestions, difficulty) {
+    return await this.request('/quiz/attempt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        book_name: String(bookName || 'Unknown Document').trim().slice(0, 500),
+        score: Number(score),
+        total_questions: Number(totalQuestions),
+        difficulty: String(difficulty || 'medium').toLowerCase(),
+      }),
+    });
+  }
+
+  /**
+   * Fetch the authenticated user's quiz history (newest first).
+   * Returns an array of attempt objects.
+   */
+  async getQuizHistory() {
+    return await this.request('/quiz/history');
+  }
+
+  /**
+   * Fetch aggregate performance stats and difficulty recommendation.
+   * Returns { average_score, quizzes_attempted, books_studied, recommended_difficulty }.
+   */
+  async getPerformance() {
+    return await this.request('/quiz/performance');
+  }
 }
+
 
 // Create one shared API service instance.
 const apiService = new ApiService();
 
 export default apiService;
-

@@ -1,0 +1,376 @@
+/* LearningHistory.css — Learning History page styles.
+   Uses the BookBot design token system (Smoky Rose palette).
+   Consistent with App.css, QuizInterface.css, and SummaryDisplay.css. */
+
+/* ============================================================
+   PAGE LAYOUT
+   ============================================================ */
+
+.learning-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  animation: fadeInUp 500ms ease both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.learning-header {
+  margin-bottom: 2rem;
+}
+
+.learning-header h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.35rem;
+}
+
+.learning-header p {
+  color: var(--color-muted);
+  font-size: 0.975rem;
+}
+
+.learning-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  margin-bottom: 1.25rem;
+}
+
+.learning-back-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(140, 96, 87, 0.06);
+}
+
+/* ============================================================
+   PERFORMANCE STATS CARDS
+   ============================================================ */
+
+.performance-section {
+  margin-bottom: 2.5rem;
+}
+
+.performance-section h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  opacity: 0.6;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.1;
+}
+
+.stat-card.difficulty-card .stat-value {
+  font-size: 1.35rem;
+  text-transform: capitalize;
+}
+
+/* Difficulty value colors */
+.stat-value.diff-easy   { color: var(--color-success); }
+.stat-value.diff-medium { color: var(--color-warning); }
+.stat-value.diff-hard   { color: var(--color-primary); }
+
+/* ============================================================
+   QUIZ HISTORY SECTION
+   ============================================================ */
+
+.history-section {
+  margin-top: 1rem;
+}
+
+.history-section h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Attempt Card ────────────────────────────── */
+
+.attempt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.attempt-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.4rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: box-shadow 0.2s, transform 0.2s;
+  animation: fadeInUp 400ms ease both;
+}
+
+.attempt-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Score circle */
+.attempt-score-circle {
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 3px solid var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: rgba(140, 96, 87, 0.07);
+}
+
+.attempt-score-circle.score-excellent { border-color: #267344; color: #267344; background: #EDF7F1; }
+.attempt-score-circle.score-great     { border-color: #3a7d44; color: #3a7d44; background: #edf6f0; }
+.attempt-score-circle.score-good      { border-color: #7E5200; color: #7E5200; background: #FDF7E8; }
+.attempt-score-circle.score-okay      { border-color: #8C6057; color: #8C6057; background: rgba(140,96,87,0.08); }
+.attempt-score-circle.score-needs-work{ border-color: #8D1C1C; color: #8D1C1C; background: #FDF2F2; }
+
+/* Attempt body */
+.attempt-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.attempt-book-name {
+  font-weight: 700;
+  font-size: 0.975rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.2rem;
+}
+
+.attempt-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.attempt-fraction {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.attempt-date {
+  margin-left: auto;
+}
+
+/* Difficulty badge */
+.difficulty-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.03em;
+}
+
+.difficulty-badge.badge-easy   { background: #EDF7F1; color: #267344; border: 1px solid #B6DEC5; }
+.difficulty-badge.badge-medium { background: #FDF7E8; color: #7E5200; border: 1px solid #E8CF88; }
+.difficulty-badge.badge-hard   { background: rgba(140,96,87,0.1); color: #6E4A43; border: 1px solid #CEC1B6; }
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+
+.empty-state {
+  background: var(--color-card);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 3.5rem 2rem;
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.empty-state h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: var(--color-muted);
+  font-size: 0.925rem;
+  max-width: 340px;
+  margin: 0 auto 1.5rem;
+}
+
+.empty-state-btn {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  border: none;
+  padding: 0.65rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.925rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.empty-state-btn:hover {
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   LOADING STATE
+   ============================================================ */
+
+.learning-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  gap: 1.25rem;
+  color: var(--color-muted);
+}
+
+.learning-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   ERROR STATE
+   ============================================================ */
+
+.learning-error {
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--color-error);
+}
+
+.learning-error h3 {
+  color: var(--color-error);
+  margin-bottom: 0.5rem;
+}
+
+.retry-btn {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  transition: background 0.2s;
+}
+
+.retry-btn:hover { background: var(--color-primary-hover); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .attempt-card {
+    flex-wrap: wrap;
+  }
+
+  .attempt-date {
+    margin-left: 0;
+    width: 100%;
+  }
+}

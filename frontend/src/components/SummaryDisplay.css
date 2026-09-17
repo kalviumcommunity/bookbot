@@ -500,3 +500,81 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   DIFFICULTY RECOMMENDATION BANNER
+   ============================================================ */
+.difficulty-recommendation {
+  background: var(--color-card-subtle);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.diff-rec-label {
+  font-weight: 700;
+  font-size: 0.925rem;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+.diff-rec-badge {
+  display: inline-block;
+  padding: 0.15rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.diff-rec-badge.diff-easy   { background: #EDF7F1; color: #267344; border: 1px solid #B6DEC5; }
+.diff-rec-badge.diff-medium { background: #FDF7E8; color: #7E5200; border: 1px solid #E8CF88; }
+.diff-rec-badge.diff-hard   { background: rgba(140,96,87,0.1); color: #6E4A43; border: 1px solid #CEC1B6; }
+
+.diff-rec-hint {
+  font-size: 0.825rem;
+  color: var(--color-muted);
+  margin-bottom: 0.75rem;
+}
+
+.diff-selector {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.diff-btn {
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.3rem 0.85rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.15s;
+  text-transform: capitalize;
+}
+
+.diff-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(140,96,87,0.06);
+}
+
+.diff-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+.diff-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

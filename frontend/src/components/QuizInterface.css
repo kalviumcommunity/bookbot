@@ -1,5 +1,17 @@
 /* QuizInterface.css — BookBot Burgundy + Oak White Theme */
 
+/* Non-blocking save error — shown if attempt saving fails */
+.save-error-banner {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
 .quiz-container {
   max-width: 1000px;
   margin: 0 auto;

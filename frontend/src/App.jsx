@@ -1,21 +1,33 @@
 
 import React, { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
 import FileUpload from './components/FileUpload';
 import SummaryDisplay from './components/SummaryDisplay';
 import QuizInterface from './components/QuizInterface';
 import DocumentChat from './components/DocumentChat';
+import ProtectedRoute from './components/ProtectedRoute';
+import WelcomeTransition from './components/WelcomeTransition';
+import LearningHistory from './pages/LearningHistory';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 
+import { useAuth } from './context/AuthContext';
 import apiService from './services/api';
 import bookbotLogo from './assets/bookbot logo.png';
 
-function App() {
+// ─── Main authenticated BookBot experience ────────────────────────────────────
+
+function BookBotApp() {
+  const { user, logout, showWelcome, isNewUser, clearWelcome } = useAuth();
+
   const [uploadedFile, setUploadedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
   const [summary, setSummary] = useState(null);
   const [quiz, setQuiz] = useState(null);
   const [currentView, setCurrentView] = useState('upload');
+  const [quizDifficulty, setQuizDifficulty] = useState('medium'); // tracks the difficulty used for the current quiz
 
   // Called after a file is successfully parsed by FileUpload
   const handleFileUpload = (file, content) => {
@@ -46,7 +58,7 @@ function App() {
   };
 
   // Generate a REAL AI quiz from the uploaded document
-  const handleQuizGenerated = async (questionCount) => {
+  const handleQuizGenerated = async (questionCount, difficulty = 'medium') => {
     try {
       if (!fileContent || !fileContent.trim()) {
         throw new Error(
@@ -59,7 +71,7 @@ function App() {
       }
 
       console.log(
-        `Generating ${questionCount} questions from document content...`
+        `Generating ${questionCount} questions (difficulty: ${difficulty})...`
       );
 
       // Call the actual backend instead of generating mock questions
@@ -137,6 +149,7 @@ function App() {
         questions: normalizedQuestions,
       });
 
+      setQuizDifficulty(difficulty); // store for QuizInterface to save with attempt
       setCurrentView('quiz');
     } catch (error) {
       console.error('Quiz generation error:', error);
@@ -153,6 +166,7 @@ function App() {
     setFileContent('');
     setSummary(null);
     setQuiz(null);
+    setQuizDifficulty('medium');
     setCurrentView('upload');
   };
 
@@ -164,6 +178,27 @@ function App() {
           alt="BookBot Logo"
           className="bookbot-logo"
         />
+
+        {/* User info + logout + learning history nav */}
+        <div className="app-header-user">
+          <span className="app-header-greeting">
+            👋 {user?.name || 'User'}
+          </span>
+          <button
+            onClick={() => setCurrentView('learning')}
+            className="learning-nav-btn"
+            title="My Learning History"
+          >
+            📈 My Learning
+          </button>
+          <button
+            onClick={logout}
+            className="logout-btn"
+            title="Log out"
+          >
+            Log Out
+          </button>
+        </div>
       </header>
 
       <main className="app-main">
@@ -187,6 +222,8 @@ function App() {
         {currentView === 'quiz' && quiz && (
           <QuizInterface
             quiz={quiz}
+            bookName={uploadedFile?.name || 'Unknown Document'}
+            difficulty={quizDifficulty}
             onBackToSummary={() => setCurrentView('summary')}
             onReset={resetApp}
           />
@@ -198,14 +235,53 @@ function App() {
             onBack={() => setCurrentView('summary')}
           />
         )}
+
+        {currentView === 'learning' && (
+          <LearningHistory
+            onBack={() => setCurrentView('upload')}
+          />
+        )}
       </main>
 
       <footer className="app-footer">
         <p>Powered by AI • Built with React</p>
       </footer>
+
+      {/* Full-screen welcome transition — only shown after live login/signup */}
+      {showWelcome && (
+        <WelcomeTransition
+          userName={user?.name}
+          isNewUser={isNewUser}
+          onDone={clearWelcome}
+        />
+      )}
     </div>
   );
 }
 
-export default App;
+// ─── Root App with routing ────────────────────────────────────────────────────
 
+function App() {
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route path="/login"  element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+
+      {/* Protected route — renders the full BookBot SPA */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <BookBotApp />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Catch-all: redirect unknown paths to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+export default App;

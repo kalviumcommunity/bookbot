@@ -14,12 +14,28 @@ const SummaryDisplay = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isQuizGenerating, setIsQuizGenerating] = useState(false);
   const [error, setError] = useState(null);
+  // Adaptive difficulty
+  const [recommendedDifficulty, setRecommendedDifficulty] = useState(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
 
   useEffect(() => {
     if (content && !summary) {
       generateSummary();
     }
   }, [content]);
+
+  // Fetch recommended difficulty once on mount (non-blocking)
+  useEffect(() => {
+    apiService.getPerformance()
+      .then(data => {
+        const rec = data?.recommended_difficulty || 'medium';
+        setRecommendedDifficulty(rec);
+        setSelectedDifficulty(rec);
+      })
+      .catch(() => {
+        // Silently ignore — difficulty recommendation is optional
+      });
+  }, []);
 
   // ----------------------------------------------------------
   // REAL AI SUMMARY
@@ -123,10 +139,11 @@ const SummaryDisplay = ({
 
     try {
       console.log(
-        `Generating ${questionCount} quiz questions...`
+        `Generating ${questionCount} quiz questions (difficulty: ${selectedDifficulty})...`
       );
 
-      await onGenerateQuiz(questionCount);
+      // Pass both questionCount and difficulty to the parent handler
+      await onGenerateQuiz(questionCount, selectedDifficulty);
 
     } catch (err) {
       console.error(
@@ -296,6 +313,36 @@ const SummaryDisplay = ({
         >
           💬 Chat with Document
         </button>
+
+        {/* ------------------------------------------------ */}
+        {/* DIFFICULTY RECOMMENDATION */}
+        {/* ------------------------------------------------ */}
+
+        {recommendedDifficulty && (
+          <div className="difficulty-recommendation">
+            <div className="diff-rec-label">
+              💡 Recommended difficulty
+              <span className={`diff-rec-badge diff-${recommendedDifficulty}`}>
+                {recommendedDifficulty.charAt(0).toUpperCase() + recommendedDifficulty.slice(1)}
+              </span>
+            </div>
+            <p className="diff-rec-hint">
+              Based on your previous quiz performance.
+            </p>
+            <div className="diff-selector">
+              {['easy', 'medium', 'hard'].map(d => (
+                <button
+                  key={d}
+                  className={`diff-btn ${selectedDifficulty === d ? 'active' : ''}`}
+                  onClick={() => setSelectedDifficulty(d)}
+                  disabled={isQuizGenerating}
+                >
+                  {d.charAt(0).toUpperCase() + d.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ------------------------------------------------ */}
         {/* QUIZ */}
