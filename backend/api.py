@@ -3,7 +3,8 @@ from fastapi import (
     FastAPI,
     UploadFile,
     File,
-    HTTPException
+    HTTPException,
+    Depends,
 )
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,11 +19,38 @@ from main import (
     chat_about_document,
 )
 
+# ── Auth imports ──────────────────────────────────────────────
+from database import create_tables
+from auth import get_current_user
+from models import User
+import auth_routes
+
+# ── Learning progress router ───────────────────────────────────
+import quiz_routes
+
 
 app = FastAPI(
     title="BookBot API",
-    version="2.0.0"
+    version="2.0.0",
+    description="AI-powered study assistant with email/password authentication.",
 )
+
+
+# ============================================================
+# STARTUP — create database tables if they don't exist yet
+# ============================================================
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    create_tables()
+
+
+# ============================================================
+# AUTH ROUTER
+# ============================================================
+
+app.include_router(auth_routes.router)
+app.include_router(quiz_routes.router)
 
 
 # ============================================================
@@ -39,7 +67,7 @@ app.add_middleware(
 
 
 # ============================================================
-# HEALTH CHECK
+# HEALTH CHECK  (public — no auth required)
 # ============================================================
 
 @app.get("/")
@@ -57,15 +85,17 @@ async def health():
 
 
 # ============================================================
-# UPLOAD
+# UPLOAD  (protected)
 # ============================================================
 
 @app.post("/upload")
 async def upload_file(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload a document and extract its text.
+    Requires a valid Bearer token.
     """
 
     if not file.filename:
@@ -166,15 +196,17 @@ async def upload_file(
 
 
 # ============================================================
-# SUMMARY
+# SUMMARY  (protected)
 # ============================================================
 
 @app.post("/summarize")
 async def summarize_content(
-    data: dict
+    data: dict,
+    current_user: User = Depends(get_current_user),
 ):
     """
     Generate an AI summary from ACTUAL document text.
+    Requires a valid Bearer token.
     """
 
     try:
@@ -219,15 +251,17 @@ async def summarize_content(
 
 
 # ============================================================
-# QUIZ
+# QUIZ  (protected)
 # ============================================================
 
 @app.post("/quiz")
 async def generate_quiz(
-    data: dict
+    data: dict,
+    current_user: User = Depends(get_current_user),
 ):
     """
     Generate an AI quiz from ACTUAL document content.
+    Requires a valid Bearer token.
     """
 
     try:
@@ -297,15 +331,17 @@ async def generate_quiz(
 
 
 # ============================================================
-# DOCUMENT CHAT
+# DOCUMENT CHAT  (protected)
 # ============================================================
 
 @app.post("/chat")
 async def document_chat(
-    data: dict
+    data: dict,
+    current_user: User = Depends(get_current_user),
 ):
     """
     Ask questions about the uploaded document.
+    Requires a valid Bearer token.
     """
 
     try:
@@ -378,4 +414,3 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
-
