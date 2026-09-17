@@ -1,1 +1,8 @@
 .env
+*.db
+bookbot.db
+err.txt
+error.txt
+package-lock.json
+__pycache__/
+*.pyc

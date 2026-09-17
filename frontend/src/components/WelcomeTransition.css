@@ -1,0 +1,182 @@
+/* ============================================================
+   WelcomeTransition.css
+   Full-screen cinematic welcome overlay shown after login/signup.
+   Uses BookBot design tokens from index.css.
+   ============================================================ */
+
+/* ── Overlay (full viewport) ──────────────────────────────── */
+.wt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-background);
+  /* Subtle warm radial glow at center */
+  background-image: radial-gradient(
+    ellipse 65% 55% at 50% 50%,
+    rgba(140, 96, 87, 0.06) 0%,
+    transparent 70%
+  );
+
+  /* Phase: entering — overlay fades in */
+  opacity: 0;
+  animation: wt-overlay-in 0.25s ease forwards;
+}
+
+/* Overlay fades out during exit phase */
+.wt-overlay.wt-exiting {
+  animation: wt-overlay-out 0.35s ease forwards;
+}
+
+@keyframes wt-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes wt-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ── Content wrapper (centered stack) ─────────────────────── */
+.wt-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+  /* Will receive exit transform class */
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity   0.7s ease,
+              filter    0.7s ease;
+}
+
+/* Exit: content drifts upward + blurs + fades */
+.wt-content.wt-content-exit {
+  transform: translateY(-40px);
+  opacity:   0;
+  filter:    blur(12px);
+}
+
+/* ── Emoji ─────────────────────────────────────────────────── */
+.wt-emoji {
+  font-size: 3.75rem;
+  line-height: 1;
+  margin-bottom: 1.5rem;
+  display: block;
+
+  opacity: 0;
+  transform: scale(0.7);
+  animation: wt-emoji-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
+}
+
+@keyframes wt-emoji-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Heading — "Hey [name]!" ───────────────────────────────── */
+.wt-heading {
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--color-text);
+  margin: 0 0 0.6rem 0;
+
+  opacity: 0;
+  transform: translateY(10px);
+  animation: wt-text-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.4s forwards;
+}
+
+/* ── Subtitle — "Welcome [back] to BookBot" ────────────────── */
+.wt-subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--color-muted);
+  margin: 0;
+
+  opacity: 0;
+  transform: translateY(8px);
+  animation: wt-text-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.7s forwards;
+}
+
+@keyframes wt-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Thin decorative line under the heading ────────────────── */
+.wt-divider {
+  width: 40px;
+  height: 2px;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  margin: 0.85rem auto 0.85rem;
+  opacity: 0;
+  animation: wt-divider-in 0.4s ease 0.55s forwards;
+}
+
+@keyframes wt-divider-in {
+  from { opacity: 0; width: 0; }
+  to   { opacity: 0.6; width: 40px; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 480px) {
+  .wt-emoji    { font-size: 2.75rem; margin-bottom: 1.1rem; }
+  .wt-heading  { font-size: 1.9rem; }
+  .wt-subtitle { font-size: 0.95rem; }
+}
+
+/* ============================================================
+   REDUCED MOTION — replace elaborate animation with simple fade
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .wt-overlay {
+    animation: wt-overlay-in 0.25s ease forwards;
+  }
+  .wt-overlay.wt-exiting {
+    animation: wt-overlay-out 0.25s ease forwards;
+  }
+
+  /* Kill all child entrance animations */
+  .wt-emoji,
+  .wt-heading,
+  .wt-subtitle,
+  .wt-divider {
+    animation: wt-reduced-in 0.3s ease forwards;
+    transform: none;
+    opacity: 0;
+  }
+
+  /* No upward drift or blur on exit */
+  .wt-content.wt-content-exit {
+    transform: none;
+    filter: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+}
+
+@keyframes wt-reduced-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

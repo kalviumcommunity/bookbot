@@ -10,10 +10,10 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 if __name__ == "__main__":
-    print("🚀 Starting BookBot API server...")
-    print("📡 API will be available at: http://localhost:8000")
-    print("📚 Frontend should connect to: http://localhost:8000")
-    print("🛑 Press Ctrl+C to stop the server")
+    print("Starting BookBot API server...")
+    print("API will be available at: http://localhost:8000")
+    print("Docs (Swagger UI): http://localhost:8000/docs")
+    print("Press Ctrl+C to stop the server")
     print("-" * 50)
     
     try:
@@ -25,7 +25,7 @@ if __name__ == "__main__":
             log_level="info"
         )
     except KeyboardInterrupt:
-        print("\n👋 Server stopped by user")
+        print("\nServer stopped by user")
     except Exception as e:
-        print(f"❌ Error starting server: {e}")
+        print(f"Error starting server: {e}")
         sys.exit(1)
