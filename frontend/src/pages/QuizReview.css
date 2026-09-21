@@ -1,0 +1,376 @@
+/* QuizReview.css — Quiz Review page styles.
+   Extends LearningHistory.css using the same Smoky Rose token system.
+   Both files share .learning-back-btn, .learning-header, .difficulty-badge,
+   .learning-loading, .learning-error, .retry-btn from LearningHistory.css
+   (imported via the page component). */
+
+/* ============================================================
+   PAGE LAYOUT
+   ============================================================ */
+
+.review-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  animation: fadeInUp 500ms ease both;
+}
+
+/* ============================================================
+   HEADER CARD — source + meta
+   ============================================================ */
+
+.review-header-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.review-source {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.review-source-icon {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.review-source-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.review-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.review-date {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+/* ============================================================
+   SCORE STATS GRID
+   ============================================================ */
+
+.review-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+}
+
+.review-stat-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.review-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--color-primary);
+  opacity: 0.5;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.review-score-val {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.1;
+}
+
+.review-correct-val {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-success);
+  line-height: 1.1;
+}
+
+.review-wrong-val {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-error);
+  line-height: 1.1;
+}
+
+/* ============================================================
+   NO SNAPSHOT — LEGACY ATTEMPT
+   ============================================================ */
+
+.review-no-snapshot {
+  background: var(--color-card-subtle);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.review-no-snapshot-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.review-no-snapshot h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.review-no-snapshot p {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  max-width: 420px;
+  margin: 0 auto 0.5rem;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   QUESTIONS SECTION
+   ============================================================ */
+
+.review-questions-section {
+  margin-top: 0.5rem;
+}
+
+.review-questions-section h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Question Card ─────────────────────────────────── */
+
+.review-question-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--color-border);
+  transition: box-shadow 0.2s;
+}
+
+.review-question-card--correct {
+  border-left-color: var(--color-success);
+  background: linear-gradient(to right, #f0faf4 0%, var(--color-card) 60px);
+}
+
+.review-question-card--wrong {
+  border-left-color: var(--color-error);
+  background: linear-gradient(to right, #fdf2f2 0%, var(--color-card) 60px);
+}
+
+.review-question-card--unanswered {
+  border-left-color: var(--color-warning);
+  background: linear-gradient(to right, #fdf7e8 0%, var(--color-card) 60px);
+}
+
+/* Question header row */
+.review-question-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.review-question-num {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Verdict badges */
+.review-verdict {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+}
+
+.review-verdict--correct {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
+}
+
+.review-verdict--wrong {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
+}
+
+.review-verdict--unanswered {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
+}
+
+/* Question text */
+.review-question-text {
+  font-size: 0.975rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+
+/* ── Options ─────────────────────────────────────── */
+
+.review-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.review-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  font-size: 0.9rem;
+  color: var(--color-text);
+  line-height: 1.45;
+  transition: background 0.15s;
+}
+
+/* Correct answer */
+.review-option--correct {
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+/* User selected a wrong answer */
+.review-option--wrong-selected {
+  border-color: var(--color-error-border);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  text-decoration: line-through;
+  text-decoration-color: rgba(141, 28, 28, 0.4);
+}
+
+.review-option-marker {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 0.85rem;
+  width: 1.1rem;
+  text-align: center;
+  margin-top: 0.05rem;
+}
+
+.review-option-text {
+  flex: 1;
+}
+
+/* Label chips — "Correct" / "Your answer" */
+.review-option-label {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+  align-self: center;
+}
+
+.review-option-label--correct {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
+}
+
+.review-option-label--yours {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
+}
+
+/* Not answered note */
+.review-not-answered-note {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+/* ============================================================
+   BOTTOM BACK BUTTON
+   ============================================================ */
+
+.review-back-bottom-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  margin-top: 1.5rem;
+}
+
+.review-back-bottom-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(140, 96, 87, 0.06);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 600px) {
+  .review-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .review-header-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .review-option {
+    font-size: 0.85rem;
+  }
+}

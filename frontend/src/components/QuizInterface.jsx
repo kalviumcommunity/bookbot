@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './QuizInterface.css';
 import apiService from '../services/api';
 
-const QuizInterface = ({ quiz, bookName, difficulty, onBackToSummary, onReset }) => {
+const QuizInterface = ({ quiz, bookName, difficulty, sourceType, onBackToSummary, onReset }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
@@ -82,13 +82,31 @@ const QuizInterface = ({ quiz, bookName, difficulty, onBackToSummary, onReset })
     const score = calculateScore();
     const resolvedBookName = bookName || 'Unknown Document';
     const resolvedDifficulty = difficulty || 'medium';
+    const resolvedSourceType = sourceType || 'unknown';
+
+    // Build an immutable snapshot of the quiz as it existed when the user took it.
+    // options are stored as plain strings to match the existing quiz format.
+    const questionsSnapshot = quiz.questions.map((q) => ({
+      question: q.question,
+      options: q.options,          // array of option strings
+      correct_answer: q.answer,   // exact option string that is correct
+    }));
+
+    // Record each question index → what the user actually selected.
+    const answersSnapshot = quiz.questions.map((_, idx) => ({
+      question_index: idx,
+      selected_answer: selectedAnswers[idx] ?? null,
+    }));
 
     apiService
       .saveQuizAttempt(
         resolvedBookName,
         score.correct,
         score.total,
-        resolvedDifficulty
+        resolvedDifficulty,
+        questionsSnapshot,
+        answersSnapshot,
+        resolvedSourceType,
       )
       .then(() => {
         console.log('Quiz attempt saved successfully.');

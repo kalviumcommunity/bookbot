@@ -59,9 +59,10 @@ function diffValueClass(difficulty) {
  * Learning History page.
  *
  * Props:
- *   onBack — callback to navigate back to the main BookBot view
+ *   onBack          — callback to navigate back to the main BookBot view
+ *   onReviewAttempt — callback(attemptId) to open the quiz review page
  */
-const LearningHistory = ({ onBack }) => {
+const LearningHistory = ({ onBack, onReviewAttempt }) => {
   const [performance, setPerformance] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -210,8 +211,22 @@ const LearningHistory = ({ onBack }) => {
           <div className="attempt-list">
             {history.map((attempt) => {
               const pct = Math.round(attempt.percentage ?? 0);
+              const canReview = Boolean(onReviewAttempt);
               return (
-                <div key={attempt.id} className="attempt-card">
+                <div
+                  key={attempt.id}
+                  className={`attempt-card${canReview ? ' attempt-card--clickable' : ''}`}
+                  onClick={canReview ? () => onReviewAttempt(attempt.id) : undefined}
+                  role={canReview ? 'button' : undefined}
+                  tabIndex={canReview ? 0 : undefined}
+                  aria-label={canReview ? `Review quiz: ${attempt.book_name}` : undefined}
+                  onKeyDown={canReview ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onReviewAttempt(attempt.id);
+                    }
+                  } : undefined}
+                >
 
                   {/* Score circle */}
                   <div className={`attempt-score-circle ${scoreClass(pct)}`}>
@@ -238,6 +253,13 @@ const LearningHistory = ({ onBack }) => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Review CTA */}
+                  {canReview && (
+                    <div className="attempt-review-cta" aria-hidden="true">
+                      {attempt.has_snapshot ? 'Review Quiz →' : 'View Result →'}
+                    </div>
+                  )}
 
                 </div>
               );

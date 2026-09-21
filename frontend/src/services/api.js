@@ -257,7 +257,15 @@ class ApiService {
    * percentage is calculated server-side — not sent from the client.
    * user_id comes from the JWT on the backend — never from this call.
    */
-  async saveQuizAttempt(bookName, score, totalQuestions, difficulty) {
+  async saveQuizAttempt(
+    bookName,
+    score,
+    totalQuestions,
+    difficulty,
+    questionsSnapshot = null,
+    answersSnapshot = null,
+    sourceType = null,
+  ) {
     return await this.request('/quiz/attempt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -266,16 +274,28 @@ class ApiService {
         score: Number(score),
         total_questions: Number(totalQuestions),
         difficulty: String(difficulty || 'medium').toLowerCase(),
+        source_type: sourceType ? String(sourceType).toLowerCase().slice(0, 20) : null,
+        questions_snapshot: questionsSnapshot || null,
+        answers_snapshot: answersSnapshot || null,
       }),
     });
   }
 
   /**
    * Fetch the authenticated user's quiz history (newest first).
-   * Returns an array of attempt objects.
+   * Returns an array of attempt objects (includes has_snapshot flag).
    */
   async getQuizHistory() {
     return await this.request('/quiz/history');
+  }
+
+  /**
+   * Fetch the full detail of a single quiz attempt for the review page.
+   * Returns attempt metadata + questions + answers snapshot.
+   * Throws if the attempt is not found or belongs to another user.
+   */
+  async getQuizAttempt(attemptId) {
+    return await this.request(`/quiz/history/${Number(attemptId)}`);
   }
 
   /**

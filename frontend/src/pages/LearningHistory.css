@@ -175,6 +175,33 @@
   transform: translateY(-1px);
 }
 
+/* Clickable variant — shown when onReviewAttempt is wired */
+.attempt-card--clickable {
+  cursor: pointer;
+}
+
+.attempt-card--clickable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Review CTA — right-aligned arrow label */
+.attempt-review-cta {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
+  opacity: 0.75;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.attempt-card--clickable:hover .attempt-review-cta,
+.attempt-card--clickable:focus-visible .attempt-review-cta {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
 /* Score circle */
 .attempt-score-circle {
   flex-shrink: 0;

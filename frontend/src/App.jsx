@@ -10,6 +10,7 @@ import DocumentChat from './components/DocumentChat';
 import ProtectedRoute from './components/ProtectedRoute';
 import WelcomeTransition from './components/WelcomeTransition';
 import LearningHistory from './pages/LearningHistory';
+import QuizReview from './pages/QuizReview';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 
@@ -28,6 +29,7 @@ function BookBotApp() {
   const [quiz, setQuiz] = useState(null);
   const [currentView, setCurrentView] = useState('upload');
   const [quizDifficulty, setQuizDifficulty] = useState('medium'); // tracks the difficulty used for the current quiz
+  const [reviewAttemptId, setReviewAttemptId] = useState(null);   // ID of the attempt to review
 
   // Called after a file is successfully parsed by FileUpload
   const handleFileUpload = (file, content) => {
@@ -102,8 +104,8 @@ function BookBotApp() {
 
           const options = Array.isArray(question.options)
             ? question.options.map((option) =>
-                String(option).trim()
-              )
+              String(option).trim()
+            )
             : [];
 
           const answer = String(
@@ -112,7 +114,7 @@ function BookBotApp() {
 
           const explanation = String(
             question.explanation ||
-              'This answer is supported by the document.'
+            'This answer is supported by the document.'
           ).trim();
 
           // Every question needs exactly 4 options
@@ -156,7 +158,7 @@ function BookBotApp() {
 
       alert(
         error?.message ||
-          'Failed to generate the quiz. Please try again.'
+        'Failed to generate the quiz. Please try again.'
       );
     }
   };
@@ -167,7 +169,20 @@ function BookBotApp() {
     setSummary(null);
     setQuiz(null);
     setQuizDifficulty('medium');
+    setReviewAttemptId(null);
     setCurrentView('upload');
+  };
+
+  /**
+   * Derive the source type string from the uploaded file object.
+   * Used to label the quiz snapshot so the review page can show the right icon.
+   */
+  const getSourceType = () => {
+    if (!uploadedFile) return 'unknown';
+    // Text-paste mode creates a mock file with name 'Text Input'
+    if (uploadedFile.name === 'Text Input') return 'text';
+    const ext = uploadedFile.name.split('.').pop()?.toLowerCase();
+    return ext || 'unknown';
   };
 
   return (
@@ -224,6 +239,7 @@ function BookBotApp() {
             quiz={quiz}
             bookName={uploadedFile?.name || 'Unknown Document'}
             difficulty={quizDifficulty}
+            sourceType={getSourceType()}
             onBackToSummary={() => setCurrentView('summary')}
             onReset={resetApp}
           />
@@ -239,6 +255,17 @@ function BookBotApp() {
         {currentView === 'learning' && (
           <LearningHistory
             onBack={() => setCurrentView('upload')}
+            onReviewAttempt={(id) => {
+              setReviewAttemptId(id);
+              setCurrentView('review');
+            }}
+          />
+        )}
+
+        {currentView === 'review' && reviewAttemptId && (
+          <QuizReview
+            attemptId={reviewAttemptId}
+            onBack={() => setCurrentView('learning')}
           />
         )}
       </main>
@@ -265,7 +292,7 @@ function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/login"  element={<LoginPage />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
 
       {/* Protected route — renders the full BookBot SPA */}
