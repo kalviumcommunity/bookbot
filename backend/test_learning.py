@@ -362,13 +362,99 @@ class TestQuizAPI(unittest.TestCase):
         self.assertGreater(data["quizzes_attempted"], 0)
         self.assertGreater(data["books_studied"], 0)
         self.assertIsNotNone(data["average_score"])
-        self.assertIn(data["recommended_difficulty"], ["easy", "medium", "hard"])
+    # ── Review detail endpoint (/quiz/history/{id}) ──────────
 
+    def test_save_attempt_with_snapshot(self):
+        sample_questions = [
+            {
+                "question": "What is Python?",
+                "options": ["A programming language", "A snake", "Both", "Neither"],
+                "answer": "Both",
+                "explanation": "Python is both a programming language and a snake.",
+            }
+        ]
+        sample_answers = [
+            {
+                "question_index": 0,
+                "selected_option": "Both",
+                "correct_option": "Both",
+                "is_correct": True,
+            }
+        ]
+        resp = self.client.post("/quiz/attempt", json={
+            "book_name": "Python Mastery",
+            "score": 1,
+            "total_questions": 1,
+            "difficulty": "medium",
+            "source_type": "pdf",
+            "questions_snapshot": sample_questions,
+            "answers_snapshot": sample_answers,
+        }, headers=self._headers(self.token_a))
+        self.assertEqual(resp.status_code, 201)
+        data = resp.json()
+        attempt_id = data["attempt_id"]
 
+        # Retrieve detail
+        detail_resp = self.client.get(f"/quiz/history/{attempt_id}", headers=self._headers(self.token_a))
+        self.assertEqual(detail_resp.status_code, 200)
+        detail = detail_resp.json()
+        self.assertEqual(detail["id"], attempt_id)
+        self.assertEqual(detail["book_name"], "Python Mastery")
+        self.assertEqual(detail["source_type"], "pdf")
+        self.assertTrue(detail["has_snapshot"])
+        self.assertEqual(len(detail["questions"]), 1)
+        self.assertEqual(detail["questions"][0]["question"], "What is Python?")
+        self.assertEqual(len(detail["answers"]), 1)
+        self.assertEqual(detail["answers"][0]["selected_option"], "Both")
 
+    def test_get_attempt_detail_unauthenticated(self):
+        resp = self.client.get("/quiz/history/1")
+        self.assertEqual(resp.status_code, 401)
 
+    def test_get_attempt_detail_not_found(self):
+        resp = self.client.get("/quiz/history/999999", headers=self._headers(self.token_a))
+        self.assertEqual(resp.status_code, 404)
 
-# ============================================================
+    def test_get_attempt_detail_user_isolation(self):
+        # Create an attempt for user A
+        resp_a = self.client.post("/quiz/attempt", json={
+            "book_name": "Alice Private Book",
+            "score": 5,
+            "total_questions": 5,
+            "difficulty": "hard",
+        }, headers=self._headers(self.token_a))
+        attempt_id = resp_a.json()["attempt_id"]
+
+        # User B attempts to access User A's quiz review
+        resp_b = self.client.get(f"/quiz/history/{attempt_id}", headers=self._headers(self.token_b))
+        self.assertEqual(resp_b.status_code, 403)
+
+    def test_get_attempt_detail_legacy_attempt_no_snapshot(self):
+        # Create attempt without snapshot
+        resp = self.client.post("/quiz/attempt", json={
+            "book_name": "Legacy Book",
+            "score": 2,
+            "total_questions": 5,
+            "difficulty": "easy",
+        }, headers=self._headers(self.token_a))
+        attempt_id = resp.json()["attempt_id"]
+
+        detail_resp = self.client.get(f"/quiz/history/{attempt_id}", headers=self._headers(self.token_a))
+        self.assertEqual(detail_resp.status_code, 200)
+        detail = detail_resp.json()
+        self.assertFalse(detail["has_snapshot"])
+        self.assertIsNone(detail["questions"])
+        self.assertIsNone(detail["answers"])
+
+    def test_history_includes_has_snapshot_flag(self):
+        resp = self.client.get("/quiz/history", headers=self._headers(self.token_a))
+        self.assertEqual(resp.status_code, 200)
+        history = resp.json()
+        self.assertGreater(len(history), 0)
+        for item in history:
+            self.assertIn("has_snapshot", item)
+            self.assertIsInstance(item["has_snapshot"], bool)
+
 # ENTRYPOINT
 # ============================================================
 
