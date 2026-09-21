@@ -3,17 +3,19 @@ quiz_routes.py — Authenticated endpoints for the learning progress feature.
 
 Routes (all require a valid Bearer JWT):
 
-    POST /quiz/attempt     — save a completed quiz attempt
-    GET  /quiz/history     — return the current user's attempts (newest first)
-    GET  /quiz/performance — return aggregate stats + difficulty recommendation
+    POST /quiz/attempt          — save a completed quiz attempt (with optional snapshot)
+    GET  /quiz/history          — return the current user's attempts (newest first)
+    GET  /quiz/history/{id}     — return one attempt's full detail for quiz review
+    GET  /quiz/performance      — return aggregate stats + difficulty recommendation
 
 Security contract:
     user_id is ALWAYS extracted from the JWT via get_current_user().
     It is never read from the request body or query parameters.
 """
 
+import json
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, field_validator
@@ -27,7 +29,6 @@ from models import QuizAttempt, User
 
 router = APIRouter(prefix="/quiz", tags=["Quiz Progress"])
 
-
 # ============================================================
 # PYDANTIC SCHEMAS
 # ============================================================
@@ -39,6 +40,11 @@ class AttemptCreate(BaseModel):
     score: int
     total_questions: int
     difficulty: str
+
+    # Optional snapshot fields — absent on older clients
+    source_type: Optional[str] = None
+    questions_snapshot: Optional[List[Dict[str, Any]]] = None
+    answers_snapshot: Optional[List[Dict[str, Any]]] = None
 
     @field_validator("book_name")
     @classmethod
@@ -72,19 +78,59 @@ class AttemptCreate(BaseModel):
             )
         return v
 
+    @field_validator("source_type")
+    @classmethod
+    def source_type_normalise(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        v = v.strip().lower()[:20]
+        return v or None
+
 
 class AttemptOut(BaseModel):
-    """Shape returned in GET /quiz/history."""
+    """Shape returned in GET /quiz/history (list view)."""
 
     id: int
     book_name: str
+    source_type: Optional[str]
     score: int
     total_questions: int
     percentage: float
     difficulty: str
     completed_at: datetime
+    has_snapshot: bool   # True when questions_json is populated
 
     model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_orm_with_flags(cls, attempt: QuizAttempt) -> "AttemptOut":
+        return cls(
+            id=attempt.id,
+            book_name=attempt.book_name,
+            source_type=attempt.source_type,
+            score=attempt.score,
+            total_questions=attempt.total_questions,
+            percentage=attempt.percentage,
+            difficulty=attempt.difficulty,
+            completed_at=attempt.completed_at,
+            has_snapshot=bool(attempt.questions_json),
+        )
+
+
+class AttemptDetail(BaseModel):
+    """Full detail returned by GET /quiz/history/{attempt_id}."""
+
+    id: int
+    book_name: str
+    source_type: Optional[str]
+    score: int
+    total_questions: int
+    percentage: float
+    difficulty: str
+    completed_at: datetime
+    has_snapshot: bool
+    questions: Optional[List[Dict[str, Any]]]   # None when no snapshot
+    answers: Optional[List[Dict[str, Any]]]     # None when no snapshot
 
 
 class PerformanceOut(BaseModel):
@@ -116,6 +162,7 @@ async def save_attempt(
     - percentage is calculated server-side (not trusted from client)
     - score must be 0 ≤ score ≤ total_questions
     - difficulty must be one of: easy | medium | hard
+    - questions_snapshot / answers_snapshot are stored as JSON if provided
     """
 
     # Cross-field validation: score cannot exceed total_questions
@@ -128,6 +175,18 @@ async def save_attempt(
     # Calculate percentage server-side
     percentage = round((payload.score / payload.total_questions) * 100, 2)
 
+    # Serialise optional snapshot fields
+    questions_json = (
+        json.dumps(payload.questions_snapshot, ensure_ascii=False)
+        if payload.questions_snapshot is not None
+        else None
+    )
+    answers_json = (
+        json.dumps(payload.answers_snapshot, ensure_ascii=False)
+        if payload.answers_snapshot is not None
+        else None
+    )
+
     attempt = QuizAttempt(
         user_id=current_user.id,   # always from JWT — never from request body
         book_name=payload.book_name,
@@ -136,6 +195,9 @@ async def save_attempt(
         percentage=percentage,
         difficulty=payload.difficulty,
         completed_at=datetime.now(timezone.utc),
+        source_type=payload.source_type,
+        questions_json=questions_json,
+        answers_json=answers_json,
     )
 
     db.add(attempt)
@@ -177,7 +239,84 @@ async def get_history(
         .all()
     )
 
-    return attempts
+    return [AttemptOut.from_orm_with_flags(a) for a in attempts]
+
+
+# ============================================================
+# GET /quiz/history/{attempt_id} — full detail for quiz review
+# ============================================================
+
+@router.get(
+    "/history/{attempt_id}",
+    response_model=AttemptDetail,
+    summary="Return a single attempt's full detail (questions + answers) for review",
+)
+async def get_attempt_detail(
+    attempt_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Return the full detail of a single quiz attempt for the review page.
+
+    Security:
+      - Requires authentication.
+      - Verifies attempt.user_id == current_user.id.
+      - Returns 404 if not found, 403 if it belongs to a different user.
+
+    Data integrity:
+      - Returns the stored snapshot (questions + answers) as-is.
+      - Never regenerates or modifies the quiz.
+      - If no snapshot exists (legacy attempt), returns has_snapshot=False
+        and null questions/answers — does not crash.
+    """
+
+    attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
+
+    if attempt is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz attempt not found.",
+        )
+
+    # Strict user isolation — never expose another user's quiz
+    if attempt.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to view this quiz attempt.",
+        )
+
+    # Deserialise snapshot JSON if present
+    questions: Optional[List[Dict[str, Any]]] = None
+    answers: Optional[List[Dict[str, Any]]] = None
+
+    if attempt.questions_json:
+        try:
+            questions = json.loads(attempt.questions_json)
+        except (json.JSONDecodeError, ValueError):
+            questions = None  # corrupt data — degrade gracefully
+
+    if attempt.answers_json:
+        try:
+            answers = json.loads(attempt.answers_json)
+        except (json.JSONDecodeError, ValueError):
+            answers = None
+
+    has_snapshot = questions is not None
+
+    return AttemptDetail(
+        id=attempt.id,
+        book_name=attempt.book_name,
+        source_type=attempt.source_type,
+        score=attempt.score,
+        total_questions=attempt.total_questions,
+        percentage=attempt.percentage,
+        difficulty=attempt.difficulty,
+        completed_at=attempt.completed_at,
+        has_snapshot=has_snapshot,
+        questions=questions,
+        answers=answers,
+    )
 
 
 # ============================================================

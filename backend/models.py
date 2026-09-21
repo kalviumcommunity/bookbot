@@ -8,7 +8,7 @@ Defines:
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, DateTime, Text
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -53,6 +53,11 @@ class QuizAttempt(Base):
 
     Security note: user_id is always set server-side from the JWT —
     it is never accepted from the client request body.
+
+    Snapshot fields (nullable — absent on legacy rows):
+      source_type     — "pdf" | "txt" | "docx" | "text" (pasted text)
+      questions_json  — JSON array of question objects (immutable snapshot)
+      answers_json    — JSON array of {question_index, selected_answer}
     """
 
     __tablename__ = "quiz_attempts"
@@ -74,6 +79,14 @@ class QuizAttempt(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+    # ── Snapshot fields (nullable — legacy rows have NULL here) ──────────────
+    # What kind of source was used: "pdf", "txt", "docx", "text"
+    source_type = Column(String(20), nullable=True)
+    # JSON-serialised list of question objects (immutable at save time)
+    questions_json = Column(Text, nullable=True)
+    # JSON-serialised list of {question_index, selected_answer}
+    answers_json = Column(Text, nullable=True)
 
     # Relationship back to User
     user = relationship("User", back_populates="quiz_attempts")

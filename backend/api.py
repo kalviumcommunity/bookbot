@@ -20,7 +20,7 @@ from main import (
 )
 
 # ── Auth imports ──────────────────────────────────────────────
-from database import create_tables
+from database import create_tables, migrate_tables
 from auth import get_current_user
 from models import User
 import auth_routes
@@ -43,6 +43,7 @@ app = FastAPI(
 @app.on_event("startup")
 async def on_startup() -> None:
     create_tables()
+    migrate_tables()  # add new nullable columns to existing tables
 
 
 # ============================================================
