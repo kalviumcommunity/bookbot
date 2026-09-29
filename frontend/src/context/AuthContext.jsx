@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // true while restoring session
   const [showWelcome, setShowWelcome] = useState(false); // true only after live login/signup
-  const [isNewUser, setIsNewUser]   = useState(false); // true for signup, false for login
+  const [isNewUser, setIsNewUser] = useState(false); // true for signup, false for login
   const navigate = useNavigate();
 
   // ── Session restore on mount ────────────────────────────────────────────────

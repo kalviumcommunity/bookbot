@@ -28,21 +28,21 @@ const prefersReducedMotion =
 // ─── Timing config (ms) ───────────────────────────────────────────────────────
 const TIMING = prefersReducedMotion
   ? {
-      exitStart:   400,   // start exit after 400ms
-      overlayFade: 200,   // overlay fades for 250ms
-      totalDone:   650,   // call onDone after this
-    }
+    exitStart: 400,   // start exit after 400ms
+    overlayFade: 200,   // overlay fades for 250ms
+    totalDone: 650,   // call onDone after this
+  }
   : {
-      exitStart:   1500,  // content starts moving up
-      overlayFade: 700,   // overlay fades out over 350ms (starts at ~2300ms)
-      totalDone:   2600,  // call onDone — component unmounts
-    };
+    exitStart: 1500,  // content starts moving up
+    overlayFade: 700,   // overlay fades out over 350ms (starts at ~2300ms)
+    totalDone: 2600,  // call onDone — component unmounts
+  };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function WelcomeTransition({ userName, isNewUser, onDone }) {
   const [overlayExiting, setOverlayExiting] = useState(false);
   const [contentExiting, setContentExiting] = useState(false);
-  const rafRef   = useRef(null);
+  const rafRef = useRef(null);
   const timerRef = useRef([]);
 
   const safeName = userName && userName.trim() ? userName.trim() : 'there';

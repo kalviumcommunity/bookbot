@@ -18,9 +18,9 @@ const DocumentChat = ({ content, onBack }) => {
 
   useEffect(() => {
     // Welcome message
-    setMessages([{ 
-      role: 'model', 
-      text: 'Hi! I have read the document you uploaded. Feel free to ask me anything about it!' 
+    setMessages([{
+      role: 'model',
+      text: 'Hi! I have read the document you uploaded. Feel free to ask me anything about it!'
     }]);
   }, []);
 
@@ -29,7 +29,7 @@ const DocumentChat = ({ content, onBack }) => {
 
     const userMessage = input.trim();
     setInput('');
-    
+
     const newHistory = [...messages, { role: 'user', text: userMessage }];
     setMessages(newHistory);
     setIsTyping(true);
@@ -38,7 +38,7 @@ const DocumentChat = ({ content, onBack }) => {
       // Gemini API strictly requires that the history starts with a user message.
       // We must filter out the initial welcome 'model' message from the history array.
       const apiHistory = messages.filter((msg, idx) => !(idx === 0 && msg.role === 'model'));
-      
+
       const response = await apiService.sendChatMessage(content, userMessage, apiHistory);
       setMessages([...newHistory, { role: 'model', text: response.reply }]);
     } catch (error) {
@@ -54,7 +54,7 @@ const DocumentChat = ({ content, onBack }) => {
         <button className="back-btn" onClick={onBack}>← Back to Summary</button>
         <h2>💬 Chat with Document</h2>
       </div>
-      
+
       <div className="chat-messages">
         {messages.map((msg, index) => (
           <div key={index} className={`message-wrapper ${msg.role}`}>
@@ -74,16 +74,16 @@ const DocumentChat = ({ content, onBack }) => {
       </div>
 
       <div className="chat-input-area">
-        <input 
-          type="text" 
+        <input
+          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Ask a question about your notes..."
           disabled={isTyping}
         />
-        <button 
-          onClick={handleSend} 
+        <button
+          onClick={handleSend}
           disabled={isTyping || !input.trim()}
           className="send-btn"
         >
