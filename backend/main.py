@@ -24,8 +24,10 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
-# Use a current Gemini Flash model.
-model = genai.GenerativeModel("gemini-3.6-flash")
+# Use the model specified in GEMINI_MODEL env var, or fall back to gemini-1.5-flash.
+# To use a different model: set GEMINI_MODEL=gemini-2.0-flash in your .env
+_model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+model = genai.GenerativeModel(_model_name)
 
 
 # ============================================================

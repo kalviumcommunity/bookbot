@@ -1,0 +1,21 @@
+﻿# ──────────────────────────────────────────────────────────────
+# netlify.toml — Netlify deployment configuration for BookBot
+# ──────────────────────────────────────────────────────────────
+
+[build]
+  # Build command — runs from the repo root
+  base    = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Node version for the build
+  NODE_VERSION = "20"
+
+# ── SPA Redirect ──────────────────────────────────────────────
+# All routes must be served by index.html for React Router to work.
+# Without this, refreshing /login or /signup returns a 404.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

@@ -12,6 +12,9 @@ import os
 import tempfile
 import uvicorn
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from main import (
     parse_file,
     generate_structured_summary,
@@ -27,6 +30,22 @@ import auth_routes
 
 # ── Learning progress router ───────────────────────────────────
 import quiz_routes
+
+
+# ============================================================
+# ALLOWED ORIGINS
+# ============================================================
+
+# Read comma-separated origins from environment.
+# In production set: ALLOWED_ORIGINS=https://bookbotai.netlify.app
+# In development, falls back to localhost origins for convenience.
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000,http://localhost:4173"
+)
+ALLOWED_ORIGINS: list[str] = [
+    o.strip() for o in _raw_origins.split(",") if o.strip()
+]
 
 
 app = FastAPI(
@@ -55,12 +74,12 @@ app.include_router(quiz_routes.router)
 
 
 # ============================================================
-# CORS
+# CORS — explicit origins so allow_credentials works correctly
 # ============================================================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -408,10 +427,12 @@ async def document_chat(
 # ============================================================
 
 if __name__ == "__main__":
+    # Support $PORT environment variable for hosting platforms (Render, Railway, etc.)
+    port = int(os.getenv("PORT", 8000))
 
     uvicorn.run(
         "api:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True
+        port=port,
+        reload=False,  # Never reload in production
     )
