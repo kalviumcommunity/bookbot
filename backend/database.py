@@ -12,22 +12,18 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 # DATABASE URL
 # ============================================================
 
-# Support DATABASE_URL env var for cloud deployments (PostgreSQL, etc.).
-# Falls back to a local SQLite file for development.
+# Store the database file alongside this module (backend/bookbot.db).
 _here = os.path.dirname(os.path.abspath(__file__))
-_sqlite_default = f"sqlite:///{os.path.join(_here, 'bookbot.db')}"
-DATABASE_URL: str = os.getenv("DATABASE_URL", _sqlite_default)
+DATABASE_URL = f"sqlite:///{os.path.join(_here, 'bookbot.db')}"
 
 # ============================================================
 # ENGINE & SESSION
 # ============================================================
 
-# SQLite requires check_same_thread=False; PostgreSQL does not accept it.
-_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-
 engine = create_engine(
     DATABASE_URL,
-    connect_args=_connect_args,
+    # Required for SQLite when used with FastAPI's async-style requests
+    connect_args={"check_same_thread": False},
 )
 
 SessionLocal = sessionmaker(

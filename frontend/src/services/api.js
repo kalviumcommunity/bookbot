@@ -7,25 +7,8 @@
 const TOKEN_KEY = 'bookbot_token';
 
 // Use VITE_API_URL when deployed. Falls back to localhost for local development.
-// ⚠️  In production (Netlify), set VITE_API_URL in the Netlify dashboard:
-//     Site Settings → Environment variables → VITE_API_URL = https://your-backend.onrender.com
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-// Warn loudly in the browser console if localhost slips into a production build.
-if (
-  typeof window !== 'undefined' &&
-  window.location.hostname !== 'localhost' &&
-  window.location.hostname !== '127.0.0.1' &&
-  API_BASE_URL.includes('localhost')
-) {
-  console.error(
-    '⚠️  BookBot: VITE_API_URL is not configured for production!\n' +
-    'The frontend is running on a deployed domain but VITE_API_URL points to localhost.\n' +
-    'Fix: Add VITE_API_URL to your Netlify environment variables and redeploy.\n' +
-    `Current VITE_API_URL: ${API_BASE_URL}`
-  );
-}
 
 class ApiService {
   constructor() {
@@ -90,18 +73,6 @@ class ApiService {
     } catch (error) {
       // Network / server unavailable
       if (error instanceof TypeError) {
-        const isProduction =
-          typeof window !== 'undefined' &&
-          window.location.hostname !== 'localhost' &&
-          window.location.hostname !== '127.0.0.1';
-
-        if (isProduction && this.baseURL.includes('localhost')) {
-          throw new Error(
-            'BookBot backend URL is not configured for production. ' +
-            'Add VITE_API_URL to your Netlify environment variables and redeploy.'
-          );
-        }
-
         throw new Error(
           `Could not connect to BookBot backend at ${this.baseURL}. ` +
           `Make sure the backend server is running.`

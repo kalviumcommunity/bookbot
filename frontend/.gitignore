@@ -22,11 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Environment files — NEVER commit actual .env files.
-# Set VITE_API_URL in the Netlify dashboard instead.
-.env
-.env.local
-.env.*.local
-# Allow the example file so developers know what vars are needed
-!.env.example
