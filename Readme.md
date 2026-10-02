@@ -2,6 +2,8 @@
 
 A modern web application that uses AI to analyze documents and generate interactive quizzes. Upload PDFs, text files, images, or Word documents and get instant AI-powered summaries and customizable quizzes.
 
+Demo Link: bookbotai.netlify.app
+
 ## ✨ Features
 
 - **📄 Multi-format Support**: Upload PDF, TXT, DOCX, and image files
