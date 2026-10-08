@@ -6,9 +6,13 @@
 
 const TOKEN_KEY = 'bookbot_token';
 
-// Use VITE_API_URL when deployed. Falls back to localhost for local development.
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8000' : undefined);
+
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_URL must be set for production deployments.');
+}
 
 class ApiService {
   constructor() {

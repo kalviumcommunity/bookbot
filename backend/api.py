@@ -58,9 +58,21 @@ app.include_router(quiz_routes.router)
 # CORS
 # ============================================================
 
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:4173",
+    "https://bookbotai.netlify.app",
+]
+allowed_origins.extend(
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")
+    if origin.strip() and origin.strip() not in allowed_origins
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
