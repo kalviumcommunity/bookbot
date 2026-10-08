@@ -4,11 +4,10 @@
 
 The frontend uses `VITE_API_URL` for all backend requests. For local development,
 copy `.env.example` to `.env.local` to target `http://localhost:8000`. If the
-variable is unset during Vite development, the client falls back to that local URL.
+variable is unset, the client safely falls back to that local URL.
 
 For Netlify, set the build environment variable `VITE_API_URL` to
-`https://bookbot-2dcu.onrender.com`. Production deployments require this variable;
-they never fall back to localhost.
+`https://bookbot-2dcu.onrender.com` so deployed requests go to the production API.
 
 Run `npm run dev` for local development and `npm run build` to verify a production
 build.

@@ -6,17 +6,12 @@
 
 const TOKEN_KEY = 'bookbot_token';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? 'http://localhost:8000' : undefined);
-
-if (!API_BASE_URL) {
-  throw new Error('VITE_API_URL must be set for production deployments.');
-}
+const API_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 class ApiService {
   constructor() {
-    this.baseURL = API_BASE_URL.replace(/\/$/, '');
+    this.baseURL = API_URL.replace(/\/$/, '');
   }
 
   // ─── Token helpers ─────────────────────────────────────────────────────────
