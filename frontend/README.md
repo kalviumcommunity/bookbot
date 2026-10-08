@@ -2,12 +2,23 @@
 
 ## Backend API configuration
 
-The frontend uses `VITE_API_URL` for all backend requests. For local development,
-copy `.env.example` to `.env.local` to target `http://localhost:8000`. If the
-variable is unset, the client safely falls back to that local URL.
+The frontend uses one shared API service and the build-time `VITE_API_URL` value
+for all backend requests. For local development, copy `.env.example` to
+`.env.local` to target `http://localhost:8000`. If the variable is unset, the
+client falls back to that local URL.
 
-For Netlify, set the build environment variable `VITE_API_URL` to
-`https://bookbot-2dcu.onrender.com` so deployed requests go to the production API.
+The repository-root `netlify.toml` sets Netlify's base directory to `frontend`,
+runs `npm run build` there, publishes `dist`, and sets `VITE_API_URL` to
+`https://bookbot-2dcu.onrender.com` during the build. If configuring these
+settings in the Netlify UI instead, use:
+
+- Base directory: `frontend`
+- Build command: `npm run build`
+- Publish directory: `dist` (relative to the base directory)
+- Build environment variable: `VITE_API_URL=https://bookbot-2dcu.onrender.com`
+
+Any Netlify UI override for `VITE_API_URL` must use the same production URL and
+be enabled for the production deploy context.
 
 Run `npm run dev` for local development and `npm run build` to verify a production
 build.
