@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 """
-Simple script to run the BookBot API server
+Run the BookBot API server.
 """
-import uvicorn
 import os
 import sys
 
-# Add the current directory to Python path
-sys.path.append(os.path.dirname(__file__))
+import uvicorn
+
+# Resolve api:app relative to this script, even when launched from the repo root.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 if __name__ == "__main__":
+    port = int(os.getenv("PORT", "8000"))
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    reload = environment == "development"
+
     print("Starting BookBot API server...")
-    print("API will be available at: http://localhost:8000")
-    print("Docs (Swagger UI): http://localhost:8000/docs")
+    print(f"API will be available at: http://localhost:{port}")
+    print(f"Docs (Swagger UI): http://localhost:{port}/docs")
     print("Press Ctrl+C to stop the server")
     print("-" * 50)
     
@@ -20,9 +25,9 @@ if __name__ == "__main__":
         uvicorn.run(
             "api:app",
             host="0.0.0.0",
-            port=8000,
-            reload=True,  # Auto-reload on code changes
-            log_level="info"
+            port=port,
+            reload=reload,
+            log_level="info",
         )
     except KeyboardInterrupt:
         print("\nServer stopped by user")

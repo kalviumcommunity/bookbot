@@ -19,7 +19,8 @@ api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
     raise RuntimeError(
-        "❌ GEMINI_API_KEY not found in backend/.env file"
+        "GEMINI_API_KEY is not set. Set it in the environment or in "
+        "backend/.env for local development."
     )
 
 genai.configure(api_key=api_key)
