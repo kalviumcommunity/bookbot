@@ -13,7 +13,7 @@ import google.generativeai as genai
 # ============================================================
 
 env_path = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path=env_path)
+load_dotenv(dotenv_path=env_path, encoding="utf-8-sig")
 
 api_key = os.getenv("GEMINI_API_KEY")
 
@@ -896,4 +896,3 @@ def chatbot():
 
 if __name__ == "__main__":
     chatbot()
-
